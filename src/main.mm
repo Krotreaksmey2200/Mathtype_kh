@@ -223,7 +223,7 @@
         dispatch_async(dispatch_get_main_queue(), ^{
             [NSApp activateIgnoringOtherApps:YES];
             [self.window makeKeyAndOrderFront:nil];
-            [self.webView evaluateJavaScript:@"actionNew()" completionHandler:nil];
+            [self.webView evaluateJavaScript:@"actionClear()" completionHandler:nil];
         });
     } else if ([request containsString:@"/edit"]) {
         // Parse JSON payload

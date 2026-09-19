@@ -15,8 +15,8 @@ on EditEquation(paramString)
 			tell application "Microsoft Word"
 				set mySel to selection
 				set selTextObj to text object of mySel
-				if (count of inline pictures of selTextObj) > 0 then
-					set theShape to inline picture 1 of selTextObj
+				if (count of inline shapes of selTextObj) > 0 then
+					set theShape to inline shape 1 of selTextObj
 					set latexCode to alternative text of theShape
 				end if
 			end tell
@@ -62,67 +62,22 @@ end EditEquation
 
 on ActivateApp()
 	try
-		tell application "MathType" to activate
+		tell application "MathType 7" to activate
 	on error
 		try
-			tell application "MathType 7" to activate
-		on error
-			try
-				do shell script "open -a '/Applications/MathType 7.app' 2>/dev/null || open -a MathType 2>/dev/null || true"
-			end try
+			do shell script "open -a '/Applications/MathType 7.app' 2>/dev/null || open -a '/Applications/MathType.app' 2>/dev/null || true"
 		end try
 	end try
 end ActivateApp
 
 on ToggleApp(paramString)
 	try
-		tell application "Microsoft Word"
-			set mySel to selection
-			set selTextObj to text object of mySel
-			
-			-- 1. Check if an equation image is selected -> toggle back to $...$
-			if (count of inline pictures of selTextObj) > 0 then
-				set theShape to inline picture 1 of selTextObj
-				set altText to alternative text of theShape
-				if altText is not missing value and altText is not "" then
-					set latexCode to altText
-					set AppleScript's text item delimiters to "|latex:"
-					set parts to text items of altText
-					if length of parts is greater than 1 then
-						set latexCode to item 2 of parts
-					else
-						set AppleScript's text item delimiters to "|"
-						set parts2 to text items of altText
-						if length of parts2 is greater than 1 then
-							set latexCode to item 2 of parts2
-						end if
-					end if
-					set AppleScript's text item delimiters to ""
-					
-					if latexCode starts with "ratio:" then
-						set AppleScript's text item delimiters to "|"
-						set parts3 to text items of latexCode
-						if length of parts3 is greater than 1 then
-							set latexCode to item 2 of parts3
-						end if
-						set AppleScript's text item delimiters to ""
-					end if
-					
-					if latexCode is not "" then
-						if latexCode does not start with "$" then
-							set latexCode to "$" & latexCode & "$"
-						end if
-						set content of text object of theShape to latexCode
-						return "Converted image to TeX"
-					end if
-				end if
-			end if
-			
-			-- 2. Otherwise delegate to app endpoint /toggle-tex
-			my ActivateApp()
-			do shell script "curl -s -m 2 -X POST http://127.0.0.1:45678/toggle-tex || true"
-			return "Triggered toggle-tex"
-		end tell
+		set homeDir to POSIX path of (path to home folder)
+		set userWorker to homeDir & "Library/Application Scripts/com.microsoft.Word/toggle_tex_worker.py"
+		set sysWorker to "/Library/Application Support/Mathtype_kh/toggle_tex_worker.py"
+		set pyCmd to "python3 " & quoted form of userWorker & " 2>/dev/null || python3 " & quoted form of sysWorker & " 2>/dev/null || true"
+		do shell script pyCmd
+		return "Success"
 	on error errMsg
 		return "Error: " & errMsg
 	end try
@@ -133,10 +88,10 @@ on AlignSelection()
 		tell application "Microsoft Word"
 			set selObj to selection
 			set selText to text object of selObj
-			set pCount to count of inline pictures of selText
+			set pCount to count of inline shapes of selText
 			set alignedCount to 0
 			repeat with i from 1 to pCount
-				set pic to inline picture i of selText
+				set pic to inline shape i of selText
 				set altText to alternative text of pic
 				if altText contains "ratio:" then
 					set AppleScript's text item delimiters to "ratio:"
@@ -162,10 +117,10 @@ on AlignDocument()
 	try
 		tell application "Microsoft Word"
 			set activeDoc to active document
-			set pCount to count of inline pictures of activeDoc
+			set pCount to count of inline shapes of activeDoc
 			set alignedCount to 0
 			repeat with i from 1 to pCount
-				set pic to inline picture i of activeDoc
+				set pic to inline shape i of activeDoc
 				set altText to alternative text of pic
 				if altText contains "ratio:" then
 					set AppleScript's text item delimiters to "ratio:"

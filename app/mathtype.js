@@ -424,8 +424,8 @@ const TABBED_EXPRESSIONS = {
 window.addEventListener("DOMContentLoaded", () => {
   mf = document.getElementById("mathField");
 
-  // Sample equation
-  mf.setValue("x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}");
+  // Start with clean empty canvas
+  mf.setValue("");
 
   renderPalettes();
   switchTab("algebra");

@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Toggle TeX Worker for Mathtype_kh Word Plugin
+Converts every $...$ or $$...$$ in Microsoft Word selection into a MathType Khmer
+equation image in-place, or converts selected equation images back to TeX text.
+Runs completely in the background without opening or focusing MathType.
+"""
+
+import os
+import sys
+import subprocess
+import tempfile
+import shutil
+import re
+import time
+
+def run_apple_script(scpt):
+    try:
+        p = subprocess.run(["/usr/bin/osascript", "-e", scpt], capture_output=True, text=True)
+        return p.stdout.strip(), p.stderr.strip()
+    except Exception as e:
+        return "", str(e)
+
+def find_tex_bin():
+    candidates = [
+        "/Library/TeX/texbin",
+        "/usr/local/texlive/2026/bin/universal-darwin",
+        "/usr/local/texlive/2025/bin/universal-darwin",
+        "/usr/local/bin",
+        "/opt/homebrew/bin"
+    ]
+    for c in candidates:
+        if os.path.exists(os.path.join(c, "latex")):
+            return c
+    return "/Library/TeX/texbin"
+
+def compile_latex(formula, font_size=12.0):
+    temp_dir = tempfile.mkdtemp(prefix="mtk_toggle_")
+    try:
+        tex_path = os.path.join(temp_dir, "eq.tex")
+        dvi_path = os.path.join(temp_dir, "eq.dvi")
+        png_path = os.path.join(temp_dir, "eq.png")
+        svg_path = os.path.join(temp_dir, "eq.svg")
+        
+        trimmed = formula.strip()
+        if trimmed.startswith("$$") and trimmed.endswith("$$"):
+            trimmed = trimmed[2:-2].strip()
+        elif trimmed.startswith("$") and trimmed.endswith("$"):
+            trimmed = trimmed[1:-1].strip()
+        elif trimmed.startswith(r"\[") and trimmed.endswith(r"\]"):
+            trimmed = trimmed[2:-2].strip()
+            
+        if trimmed.startswith(r"\begin{align") or trimmed.startswith(r"\begin{equation"):
+            body = trimmed
+        else:
+            body = f"$ \\displaystyle {trimmed} $"
+            
+        tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
+\usepackage{{lmodern}}
+\usepackage{{amsmath,amssymb,amsfonts}}
+\usepackage{{xcolor}}
+\nopagecolor
+\begin{{document}}
+\fontsize{{{font_size}pt}}{{{font_size * 1.25}pt}}\selectfont
+{body}
+\end{{document}}
+"""
+        with open(tex_path, "w", encoding="utf-8") as f:
+            f.write(tex_code)
+            
+        tex_bin = find_tex_bin()
+        env = os.environ.copy()
+        env["PATH"] = f"{tex_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
+        
+        # 1. Run latex
+        subprocess.run([os.path.join(tex_bin, "latex"), "-interaction=nonstopmode", "eq.tex"],
+                       cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if not os.path.exists(dvi_path):
+            return None
+            
+        # 2. Run dvipng (300 DPI Transparent)
+        subprocess.run([os.path.join(tex_bin, "dvipng"), "-D", "300", "-T", "tight", "-bg", "Transparent", "-o", "eq.png", "eq.dvi"],
+                       cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if not os.path.exists(png_path):
+            return None
+            
+        # 3. Run dvisvgm to get exact depth
+        width, height, depth, ratio = 0.0, 0.0, 0.0, 0.0
+        subprocess.run([os.path.join(tex_bin, "dvisvgm"), "--no-styles", "--no-fonts", "--exact-bbox", "eq.dvi", "-o", "eq.svg"],
+                       cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if os.path.exists(svg_path):
+            with open(svg_path, "r", encoding="utf-8", errors="ignore") as f:
+                svg = f.read()
+            m = re.search(r"viewBox\s*=\s*['\"]\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)", svg)
+            if m:
+                min_y = float(m.group(2))
+                width = float(m.group(3))
+                height = float(m.group(4))
+                depth = min_y + height
+                if height > 0:
+                    ratio = depth / height
+                    
+        # 4. Copy PNG to Word Sandbox tmp folder
+        home = os.path.expanduser("~")
+        word_tmp = os.path.join(home, "Library/Containers/com.microsoft.Word/Data/tmp")
+        os.makedirs(word_tmp, exist_ok=True)
+        dest_filename = f"mathtype_eq_{int(time.time() * 1000)}_{os.getpid()}_{hash(formula) & 0xffff}.png"
+        dest_path = os.path.join(word_tmp, dest_filename)
+        shutil.copyfile(png_path, dest_path)
+        
+        return {
+            "png_path": dest_path,
+            "width": width,
+            "height": height,
+            "depth": depth,
+            "ratio": ratio,
+            "latex": trimmed
+        }
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+def main():
+    # 1. First check if selection currently has an equation inline picture -> convert to $...$
+    check_pic_scpt = """
+    tell application "Microsoft Word"
+        if (count of documents) is 0 then return "NO_DOC"
+        set s to selection
+        set st to text object of s
+        set c to count of inline shapes of st
+        if c > 0 then
+            set conv to 0
+            repeat with i from c to 1 by -1
+                set p to inline shape i of st
+                set alt to alternative text of p
+                if alt contains "latex:" then
+                    set AppleScript's text item delimiters to "latex:"
+                    set lCode to text item 2 of alt
+                    set AppleScript's text item delimiters to ""
+                    set content of text object of p to "$" & lCode & "$"
+                    set conv to conv + 1
+                end if
+            end repeat
+            return "PIC:" & (conv as text)
+        end if
+        return "NO_PIC"
+    end tell
+    """
+    out, _ = run_apple_script(check_pic_scpt)
+    if out.startswith("PIC:"):
+        sys.exit(0)
+
+    # 2. Get selection text and start offset
+    get_sel_scpt = """
+    tell application "Microsoft Word"
+        if (count of documents) is 0 then return "NO_DOC"
+        set sel to selection
+        set selStart to start of content of text object of sel
+        set selText to content of text object of sel
+        return (selStart as text) & "|||" & selText
+    end tell
+    """
+    out, _ = run_apple_script(get_sel_scpt)
+    if "|||" not in out:
+        sys.exit(0)
+        
+    start_str, sel_text = out.split("|||", 1)
+    sel_start = int(start_str)
+    
+    # 3. Find all formulas $...$ and $$...$$
+    pattern = re.compile(r"\$\$(.+?)\$\$|\$((?:\\\$|[^\$])+)\$|\\\[(.+?)\\\]", re.DOTALL)
+    matches = []
+    for m in pattern.finditer(sel_text):
+        matches.append((m.start(), m.end(), m.group(0)))
+        
+    # If no formulas found in text, check if any equation shapes are inside selection bounds in document
+    if not matches:
+        check_doc_pics = f"""
+        tell application "Microsoft Word"
+            set sStart to {sel_start}
+            set sEnd to {sel_start + len(sel_text)}
+            set c to count of inline shapes of active document
+            set conv to 0
+            repeat with i from c to 1 by -1
+                set p to inline shape i of active document
+                set pStart to start of content of text object of p
+                if pStart >= sStart and pStart <= sEnd then
+                    set alt to alternative text of p
+                    if alt contains "latex:" then
+                        set AppleScript's text item delimiters to "latex:"
+                        set lCode to text item 2 of alt
+                        set AppleScript's text item delimiters to ""
+                        set content of text object of p to "$" & lCode & "$"
+                        set conv to conv + 1
+                    end if
+                end if
+            end repeat
+            return conv
+        end tell
+        """
+        run_apple_script(check_doc_pics)
+        sys.exit(0)
+
+    # 4. Replace each formula from end of selection to start
+    for s_off, e_off, formula in reversed(matches):
+        res = compile_latex(formula)
+        if not res:
+            continue
+            
+        doc_s = sel_start + s_off
+        doc_e = sel_start + e_off
+        png_p = res["png_path"]
+        w = res["width"]
+        h = res["height"]
+        dep = res["depth"]
+        rat = res["ratio"]
+        lat = res["latex"].replace("\\", "\\\\").replace("\"", "\\\"")
+        
+        replace_scpt = f"""
+        tell application "Microsoft Word"
+            set r to create range active document start {doc_s} end {doc_e}
+            select r
+            set content of text object of selection to ""
+            make new inline picture at (text object of selection) with properties {{file name:"{png_p}"}}
+            set c to count of inline shapes of active document
+            repeat with i from 1 to c
+                set ishp to inline shape i of active document
+                if (start of content of text object of ishp) = {doc_s} then
+                    set width of ishp to {w:.2f}
+                    set height of ishp to {h:.2f}
+                    set font position of font object of (text object of ishp) to -{dep:.2f}
+                    set alternative text of ishp to "ratio:{rat:.4f}|latex:{lat}"
+                    exit repeat
+                end if
+            end repeat
+        end tell
+        """
+        run_apple_script(replace_scpt)
+
+if __name__ == "__main__":
+    main()
