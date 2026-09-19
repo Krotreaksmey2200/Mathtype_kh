@@ -9,6 +9,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 @interface TeXResult : NSObject
 @property (assign, nonatomic) BOOL success;
@@ -159,6 +163,115 @@
 
     [self.window makeKeyAndOrderFront:nil];
     [NSApp activateIgnoringOtherApps:YES];
+    [self startLocalServer];
+}
+
+#pragma mark - Local Word Integration Server (127.0.0.1:45678)
+
+- (void)startLocalServer {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (server_fd < 0) {
+            std::cerr << "[Local Server] Failed to create socket" << std::endl;
+            return;
+        }
+        int opt = 1;
+        setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        
+        struct sockaddr_in address;
+        memset(&address, 0, sizeof(address));
+        address.sin_family = AF_INET;
+        address.sin_addr.s_addr = inet_addr("127.0.0.1");
+        address.sin_port = htons(45678);
+        
+        if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+            std::cerr << "[Local Server] Port 45678 already bound or in use" << std::endl;
+            close(server_fd);
+            return;
+        }
+        
+        if (listen(server_fd, 10) < 0) {
+            close(server_fd);
+            return;
+        }
+        std::cout << "[Local Server] MathType 7 Word Integration server listening on 127.0.0.1:45678" << std::endl;
+        
+        while (true) {
+            struct sockaddr_in client_addr;
+            socklen_t client_len = sizeof(client_addr);
+            int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &client_len);
+            if (client_fd < 0) continue;
+            
+            char buffer[16384];
+            ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer) - 1, 0);
+            if (bytes_read > 0) {
+                buffer[bytes_read] = '\0';
+                NSString *request = [NSString stringWithUTF8String:buffer];
+                if (!request) request = [[NSString alloc] initWithBytes:buffer length:bytes_read encoding:NSISOLatin1StringEncoding];
+                [self handleHTTPRequest:request clientFD:client_fd];
+            } else {
+                close(client_fd);
+            }
+        }
+    });
+}
+
+- (void)handleHTTPRequest:(NSString *)request clientFD:(int)client_fd {
+    NSString *responseBody = @"{\"status\":\"ok\"}";
+    
+    if ([request containsString:@"/new-inline"]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [NSApp activateIgnoringOtherApps:YES];
+            [self.window makeKeyAndOrderFront:nil];
+            [self.webView evaluateJavaScript:@"actionNew()" completionHandler:nil];
+        });
+    } else if ([request containsString:@"/edit"]) {
+        // Parse JSON payload
+        NSRange bodyRange = [request rangeOfString:@"\r\n\r\n"];
+        if (bodyRange.location == NSNotFound) {
+            bodyRange = [request rangeOfString:@"\n\n"];
+        }
+        NSString *body = @"";
+        if (bodyRange.location != NSNotFound) {
+            body = [request substringFromIndex:bodyRange.location + bodyRange.length];
+        }
+        
+        NSString *latex = @"";
+        if ([body length] > 0) {
+            NSData *data = [body dataUsingEncoding:NSUTF8StringEncoding];
+            NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if (json && json[@"latex"]) {
+                latex = [NSString stringWithFormat:@"%@", json[@"latex"]];
+            }
+        }
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [NSApp activateIgnoringOtherApps:YES];
+            [self.window makeKeyAndOrderFront:nil];
+            if ([latex length] > 0) {
+                NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@[latex] options:0 error:nil];
+                NSString *jsonArray = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+                NSString *js = [NSString stringWithFormat:@"loadLatexFromWord(%@[0])", jsonArray];
+                [self.webView evaluateJavaScript:js completionHandler:nil];
+            }
+        });
+    } else if ([request containsString:@"/toggle-tex"]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleToggleTeX];
+        });
+    }
+    
+    NSString *httpResponse = [NSString stringWithFormat:
+        @"HTTP/1.1 200 OK\r\n"
+        @"Content-Type: application/json\r\n"
+        @"Access-Control-Allow-Origin: *\r\n"
+        @"Content-Length: %lu\r\n"
+        @"Connection: close\r\n\r\n%@",
+        (unsigned long)[responseBody lengthOfBytesUsingEncoding:NSUTF8StringEncoding],
+        responseBody];
+        
+    send(client_fd, [httpResponse UTF8String], [httpResponse lengthOfBytesUsingEncoding:NSUTF8StringEncoding], 0);
+    close(client_fd);
 }
 
 #pragma mark - LaTeX Kernel Compilation Engine

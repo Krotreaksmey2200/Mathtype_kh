@@ -1,0 +1,61 @@
+#!/bin/bash
+
+TARGET_MOUNT="${2:-/}"
+SOURCE_DIR="$TARGET_MOUNT/Library/Application Support/Mathtype_kh"
+if [ ! -d "$SOURCE_DIR" ]; then
+    SOURCE_DIR="/Library/Application Support/Mathtype_kh"
+fi
+
+DOTM_NAME="Mathtype_kh.dotm"
+SCPT_NAME="MacTeXMathEditor.scpt"
+SCPT_NAME_KH="Mathtype_kh.scpt"
+
+echo "Installing Mathtype_kh Word Plugin from $SOURCE_DIR..."
+
+if [ ! -f "$SOURCE_DIR/$DOTM_NAME" ]; then
+    echo "Error: $SOURCE_DIR/$DOTM_NAME not found."
+    exit 0
+fi
+
+# 1. System-wide installation for Office 365 / Word (if directory exists)
+SYS_WORD_STARTUP="$TARGET_MOUNT/Library/Application Support/Microsoft/Office365/User Content.localized/Startup.localized/Word"
+if [ -d "$TARGET_MOUNT/Library/Application Support/Microsoft/Office365" ]; then
+    mkdir -p "$SYS_WORD_STARTUP" 2>/dev/null || true
+    cp -f "$SOURCE_DIR/$DOTM_NAME" "$SYS_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    rm -f "$SYS_WORD_STARTUP/MacTeXMathEditorPlugin.dotm" 2>/dev/null || true
+    chmod 644 "$SYS_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+fi
+
+# 2. Install for each real user on this Mac
+for user_home in /Users/*; do
+    # Skip non-directories, Shared, and Guest
+    if [ ! -d "$user_home" ] || [ "$(basename "$user_home")" = "Shared" ] || [ "$(basename "$user_home")" = "Guest" ]; then
+        continue
+    fi
+    
+    username=$(basename "$user_home")
+    
+    # Target 1: Word Startup folder in Group Containers
+    USER_WORD_STARTUP="$user_home/Library/Group Containers/UBF8T346G9.Office/User Content.localized/Startup.localized/Word"
+    mkdir -p "$USER_WORD_STARTUP" 2>/dev/null || true
+    cp -f "$SOURCE_DIR/$DOTM_NAME" "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    rm -f "$USER_WORD_STARTUP/MacTeXMathEditorPlugin.dotm" 2>/dev/null || true
+    chown "$username" "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    chmod 644 "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    xattr -d com.apple.quarantine "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    
+    # Target 2: AppleScript sandbox scripts folder
+    USER_APP_SCRIPTS="$user_home/Library/Application Scripts/com.microsoft.Word"
+    mkdir -p "$USER_APP_SCRIPTS" 2>/dev/null || true
+    cp -f "$SOURCE_DIR/$SCPT_NAME" "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
+    cp -f "$SOURCE_DIR/$SCPT_NAME_KH" "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
+    chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
+    chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
+    xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+done
+
+echo "Mathtype_kh Word Plugin installation completed successfully."
+exit 0
