@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MathType 7 - Equation Editor (64-bit Apple Silicon)</title>
+  <link rel="stylesheet" href="./node_modules/mathlive/mathlive-fonts.css">
+  <link rel="stylesheet" href="./node_modules/mathlive/mathlive-static.css">
+  <link rel="stylesheet" href="./mathtype.css">
+</head>
+<body>
+  <div class="mathtype-window">
+    <!-- Menu Bar -->
+    <header class="menu-bar">
+      <div class="menu-group">
+        <div class="menu-item" data-menu="file">
+          <span class="menu-label" id="menuFile">File</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row" onclick="actionNew()"><span class="item-name" id="menuNew">New Equation</span><span class="item-shortcut">⌘N</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="actionInsertIntoWord()"><span class="item-name" id="menuInsertWord">Insert into Word</span><span class="item-shortcut">⌘I</span></div>
+            <div class="dropdown-row" onclick="actionSavePNG()"><span class="item-name" id="menuSavePNG">Save as PNG Image...</span><span class="item-shortcut">⌘S</span></div>
+            <div class="dropdown-row" onclick="actionSaveLaTeX()"><span class="item-name" id="menuSaveLaTeX">Save as LaTeX...</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="window.print()"><span class="item-name" id="menuPrint">Print...</span><span class="item-shortcut">⌘P</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="window.close()"><span class="item-name" id="menuClose">Close Window</span><span class="item-shortcut">⌘W</span></div>
+          </div>
+        </div>
+        <div class="menu-item" data-menu="edit">
+          <span class="menu-label" id="menuEdit">Edit</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row" onclick="actionUndo()"><span class="item-name">Undo</span><span class="item-shortcut">⌘Z</span></div>
+            <div class="dropdown-row" onclick="actionRedo()"><span class="item-name">Redo</span><span class="item-shortcut">⇧⌘Z</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="actionCut()"><span class="item-name">Cut</span><span class="item-shortcut">⌘X</span></div>
+            <div class="dropdown-row" onclick="actionCopyPNG()"><span class="item-name" id="menuCopyWord">Copy to Word</span><span class="item-shortcut">⌘C</span></div>
+            <div class="dropdown-row" onclick="actionCopyLaTeX()"><span class="item-name">Copy as LaTeX</span><span class="item-shortcut">⌥⌘L</span></div>
+            <div class="dropdown-row" onclick="actionPaste()"><span class="item-name">Paste</span><span class="item-shortcut">⌘V</span></div>
+            <div class="dropdown-row" onclick="actionSelectAll()"><span class="item-name">Select All</span><span class="item-shortcut">⌘A</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="actionToggleTeX()"><span class="item-name" id="menuToggleTeX">Toggle TeX (ពី Word មក MathType)</span><span class="item-shortcut">⌥\</span></div>
+          </div>
+        </div>
+        <div class="menu-item" data-menu="view">
+          <span class="menu-label" id="menuView">View</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row" onclick="setZoom(1.0)"><span class="item-name">Zoom 100% (Standard)</span></div>
+            <div class="dropdown-row" onclick="setZoom(1.5)"><span class="item-name">Zoom 150%</span></div>
+            <div class="dropdown-row" onclick="setZoom(2.0)"><span class="item-name">Zoom 200%</span></div>
+            <div class="dropdown-row" onclick="setZoom(3.0)"><span class="item-name">Zoom 300%</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="toggleTabs()"><span class="item-name">Toggle Tabbed Expressions Bar</span></div>
+          </div>
+        </div>
+        <div class="menu-item" data-menu="style">
+          <span class="menu-label" id="menuStyle">Style</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row active-check" onclick="setStyle('math')"><span class="item-name">✓ Math (Automatic)</span><span class="item-shortcut">⌘+</span></div>
+            <div class="dropdown-row" onclick="setStyle('text')"><span class="item-name">Text</span><span class="item-shortcut">⇧⌘T</span></div>
+            <div class="dropdown-row" onclick="setStyle('function')"><span class="item-name">Function</span><span class="item-shortcut">⇧⌘F</span></div>
+            <div class="dropdown-row" onclick="setStyle('variable')"><span class="item-name">Variable</span><span class="item-shortcut">⇧⌘V</span></div>
+            <div class="dropdown-row" onclick="setStyle('greek')"><span class="item-name">Greek</span><span class="item-shortcut">⇧⌘G</span></div>
+          </div>
+        </div>
+        <div class="menu-item" data-menu="size">
+          <span class="menu-label" id="menuSize">Size</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row" onclick="setEquationSize(10)"><span class="item-name">10 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(11)"><span class="item-name">11 pt</span></div>
+            <div class="dropdown-row active-check" id="sizeMenu12" onclick="setEquationSize(12)"><span class="item-name">✓ 12 pt (លំនាំដើម / Default)</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(13)"><span class="item-name">13 pt</span></div>
+            <div class="dropdown-row" id="sizeMenu14" onclick="setEquationSize(14)"><span class="item-name">14 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(16)"><span class="item-name">16 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(18)"><span class="item-name">18 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(20)"><span class="item-name">20 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(24)"><span class="item-name">24 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(28)"><span class="item-name">28 pt</span></div>
+            <div class="dropdown-row" onclick="setEquationSize(36)"><span class="item-name">36 pt</span></div>
+          </div>
+        </div>
+        <div class="menu-item" data-menu="help">
+          <span class="menu-label" id="menuHelp">Help</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row" onclick="showHelpModal()"><span class="item-name">Keyboard Shortcuts Guide...</span></div>
+            <div class="dropdown-row" onclick="showLaTeXConfigModal()"><span class="item-name" id="menuLatexConfig">⚙️ កំណត់ផ្លូវ LaTeX Path (Config LaTeX)...</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="showAboutModal()"><span class="item-name">About MathType 7 (64-bit)...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="window-top-right">
+        <!-- Equation Size Picker Dropdown -->
+        <div class="equation-size-picker">
+          <label for="equationSizeSelect">Size:</label>
+          <select id="equationSizeSelect" onchange="setEquationSize(this.value)" title="ទំហំសមីការសម្រាប់បញ្ចូលទៅ Word">
+            <option value="10">10 pt</option>
+            <option value="11">11 pt</option>
+            <option value="12" selected>12 pt (លំនាំដើម)</option>
+            <option value="13">13 pt</option>
+            <option value="14">14 pt</option>
+            <option value="16">16 pt</option>
+            <option value="18">18 pt</option>
+            <option value="20">20 pt</option>
+            <option value="24">24 pt</option>
+            <option value="28">28 pt</option>
+            <option value="36">36 pt</option>
+          </select>
+        </div>
+
+        <!-- Language Switcher -->
+        <button class="lang-toggle-btn" onclick="toggleLanguage()" id="langToggleBtn" title="ប្តូរភាសា / Switch Language">
+          🇰🇭 ខ្មែរ
+        </button>
+        <span class="window-title-tag">MathType 7 (Khmer Math Edition)</span>
+      </div>
+    </header>
+
+    <!-- Toolbar: Palettes Area -->
+    <div class="toolbar-container">
+      <!-- Row 1: 10 Symbol Palettes -->
+      <div class="palettes-row symbol-palettes-row" id="symbolPalettesRow"></div>
+
+      <!-- Row 2: 10 Template Palettes -->
+      <div class="palettes-row template-palettes-row" id="templatePalettesRow"></div>
+
+      <!-- Row 3: Tabbed Expression Bars -->
+      <div class="tabbed-bar-container" id="tabbedBarContainer">
+        <div class="tabs-header" id="tabsHeader">
+          <button class="tab-btn active" data-tab="algebra">Algebra</button>
+          <button class="tab-btn" data-tab="derivs">Derivs</button>
+          <button class="tab-btn" data-tab="statistics">Statistics</button>
+          <button class="tab-btn" data-tab="matrices">Matrices</button>
+          <button class="tab-btn" data-tab="sets">Sets</button>
+          <button class="tab-btn" data-tab="trig">Trig</button>
+          <button class="tab-btn" data-tab="geometry">Geometry</button>
+        </div>
+        <div class="tabs-content" id="tabsContent"></div>
+      </div>
+    </div>
+
+    <!-- Main Equation Editor Canvas -->
+    <main class="editor-area">
+      <div class="editor-canvas-wrapper" id="canvasWrapper">
+        <math-field id="mathField" class="mathtype-mathfield"></math-field>
+      </div>
+    </main>
+
+    <!-- Quick Action / Export Bar (Khmer Math Editor Style) -->
+    <footer class="bottom-action-bar">
+      <div class="action-buttons-left">
+        <!-- Open Word Button -->
+        <button class="action-btn open-word-action" onclick="actionOpenWord()" id="btnOpenWord" title="បើកកម្មវិធី Microsoft Word">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5.5 14h-1.8l-1.7-6.2L8.3 17H6.5L4 7h1.9l1.6 7.1L9.2 7h1.6l1.7 7.1L14.1 7H16l-2.5 10z"/></svg>
+          <span id="labelOpenWord">បើក Word</span>
+        </button>
+
+        <!-- Big Insert Into Word Button (Auto AppleScript Insertion with Baseline Alignment) -->
+        <button class="action-btn insert-word-action" onclick="actionInsertIntoWord()" id="btnInsertWord" title="បញ្ចូលសមីការទៅកាន់ Microsoft Word ផ្ទាល់ដោយស្វ័យប្រវត្តិ (⌘I ឬ Enter)">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          <span id="labelInsertWord">បញ្ចូលទៅ Word</span>
+        </button>
+
+        <!-- Auto Word Checkbox Toggle -->
+        <label class="auto-word-badge" title="ពេលចុច Enter វានឹងលោតចូល Word ដោយស្វ័យប្រវត្តិ">
+          <input type="checkbox" id="autoWordCheck" checked onchange="toggleAutoWord(this.checked)" />
+          <span>⚡ Auto Word</span>
+        </label>
+
+        <!-- Toggle TeX Button (Import / Convert selected Word equation to MathType) -->
+        <button class="action-btn toggle-tex-action" onclick="actionToggleTeX()" id="btnToggleTeX" title="ទាញយកសមីការដែលបានជ្រើសរើស (Select) ពី Microsoft Word មកកែក្នុង MathType (⌥\)">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+          <span id="labelToggleTeX">Toggle TeX</span>
+        </button>
+
+        <!-- Copy to Word Button -->
+        <button class="action-btn primary-action" onclick="actionCopyPNG()" id="btnCopyWord" title="ចម្លងរូបមន្តទុកសម្រាប់បិទ (⌘V) ក្នុង Word">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          <span id="labelCopyWord">ចម្លងទៅ Word</span>
+        </button>
+
+        <button class="action-btn secondary-action" onclick="actionCopyLaTeX()" title="Copy LaTeX code">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+          <span>LaTeX</span>
+        </button>
+
+        <button class="action-btn text-action" onclick="actionClear()" id="btnClear" title="សម្អាតផ្ទាំង">
+          <span id="labelClear">សម្អាត</span>
+        </button>
+      </div>
+
+      <div class="status-and-zoom-right">
+        <span class="status-message" id="statusMessage">ត្រៀមរួចរាល់</span>
+        <div class="zoom-selector">
+          <label for="zoomSelect">Zoom:</label>
+          <select id="zoomSelect" onchange="setZoom(parseFloat(this.value))">
+            <option value="1.0">100%</option>
+            <option value="1.5" selected>150%</option>
+            <option value="2.0">200%</option>
+            <option value="3.0">300%</option>
+          </select>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Palette Dropdown Popover Container -->
+  <div id="palettePopup" class="palette-popup hidden">
+    <div class="popup-grid" id="popupGrid"></div>
+  </div>
+
+  <!-- Modal Dialog (Help & About) -->
+  <div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modalTitle">About MathType 7</h3>
+        <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter">
+        <button class="action-btn primary-action" onclick="closeModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- External rendering libraries -->
+  <script src="./node_modules/katex/dist/katex.min.js"></script>
+  <script src="./node_modules/html2canvas/dist/html2canvas.min.js"></script>
+  <!-- MathLive Script -->
+  <script src="./node_modules/mathlive/mathlive.min.js"></script>
+  <!-- Main Application Logic -->
+  <script src="./mathtype.js"></script>
+</body>
+</html>
