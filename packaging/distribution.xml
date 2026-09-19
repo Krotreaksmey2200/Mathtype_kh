@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>MathType 7 (Khmer Math Edition)</title>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <pkg-ref id="com.dessci.mathtype7.kh"/>
+    <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.dessci.mathtype7.kh"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.dessci.mathtype7.kh" visible="false">
+        <pkg-ref id="com.dessci.mathtype7.kh"/>
+    </choice>
+    <pkg-ref id="com.dessci.mathtype7.kh" version="7.4.4" onConclusion="none">MathType-Component.pkg</pkg-ref>
+</installer-gui-script>

@@ -1,0 +1,7 @@
+#!/bin/bash
+TARGET="/Applications/MathType 7.app"
+if [ -d "$TARGET" ]; then
+    xattr -cr "$TARGET" || true
+    chmod -R 755 "$TARGET" || true
+fi
+exit 0

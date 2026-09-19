@@ -2,6 +2,10 @@
 
 > **Native 64-bit MathType Desktop Application for macOS** with high-resolution **LaTeX Kernel Engine (300 DPI)** and deep **Microsoft Word Automation** with automatic **Baseline Alignment**.
 
+### 📥 កញ្ចប់ដំឡើងសម្រាប់កុំព្យូទ័រផ្សេង (Installer Package):
+👉 **[ទាញយក MathType-7-Khmer-macOS.pkg (ទំហំ 9.8 MB)](MathType-7-Khmer-macOS.pkg?raw=true)**  
+*(ចុច Double-Click លើឯកសារ `.pkg` នេះ ដើម្បីដំឡើងចូល `/Applications/MathType 7.app` លើកុំព្យូទ័រ Mac ផ្សេងទៀតបានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
+
 ---
 
 ## ✨ លក្ខណៈពិសេសចម្បង (Key Features)

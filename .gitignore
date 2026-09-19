@@ -9,8 +9,10 @@ app/node_modules/
 .Spotlight-V100
 .Trashes
 
-# Large original packages
-*.pkg
+# Large original packages & staging
+MathType-mac-en-*.pkg
+packaging/MathType-Component.pkg
+packaging/staging/
 
 # Build outputs
 src/MathTypeNative
