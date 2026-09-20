@@ -23,29 +23,48 @@
    - Click the green **"Insert into Word"** button or press **`⌘ + I`**.
    - **Auto Word Mode:** When typing finishes, simply hit **`Enter`** (Return) or **`⌘ + Enter`** to automatically insert the equation directly into Word at the cursor position.
 
-2. **✏️ In-Place Equation Editing**
-   - Select an existing equation in Microsoft Word and click **"Edit Equation"** (កែប្រែសមីការ) on the Word ribbon.
+2. **✏️ In-Place Equation Editing & Double-Click in Word**
+   - Double-click any equation directly in Microsoft Word, or click **"Edit Equation"** (កែប្រែសមីការ) on the Word ribbon.
    - **Mathtype-kh** immediately opens, brings itself to the foreground, and loads the existing LaTeX formula into the editor canvas.
    - When you click **"Insert into Word"**, it seamlessly replaces the old equation with the newly edited formula in-place without duplicating.
 
-3. **🔄 Toggle TeX Integration**
+3. **🇰🇭 Khmer Text in Math Mode (`\text{...}`)**
+   - Click the dedicated **🇰🇭 អក្សរខ្មែរ** button or press **`⌘ + ⇧ + T`** to insert Khmer text directly into your mathematical equations.
+   - Preserves complete Unicode Khmer script rendering within formulas.
+
+4. **🧪 Chemistry Tab & LaTeX `mhchem` Mode**
+   - Dedicated **Chemistry Tab (គីមីវិទ្យា)** with chemical reaction formulas, equilibrium arrows (`\rightleftharpoons`), precipitation/gas arrows (`\downarrow`, `\uparrow`), and states of matter.
+   - Powered by LaTeX `\usepackage[version=4]{mhchem}` directly in the TeX kernel.
+
+5. **🕒 Equation History & ⭐ Favorites**
+   - Keeps track of your **last 30 equations** with KaTeX rendered visual previews.
+   - Star frequently used equations into your **Favorites** collection for 1-click re-use.
+   - Manage, delete, or clear history anytime.
+
+6. **📄 Vector SVG & Vector PDF Export**
+   - Export infinitely scalable vector graphics directly via **Save as SVG...** or **Save as Vector PDF...** in the File menu or bottom toolbar.
+   - Uses native `dvisvgm` and `dvipdfmx` for professional typesetting publication quality.
+
+7. **🔄 Auto-Update Checker from GitHub**
+   - Access **Help -> Check for Updates...** to verify whether a newer version is available on GitHub Releases with a changelog summary and 1-click download.
+
+8. **🔄 Toggle TeX Integration**
    - Highlight any LaTeX code or formula (such as `$E=mc^2$`) in Microsoft Word and click **`Toggle TeX`** (or press **`⌥ + \`** / **`⌥ + T`**).
    - Automatically converts raw text expressions into high-resolution 300 DPI equations in the background.
 
-4. **📐 Automatic Baseline Alignment**
+9. **📐 Automatic Baseline Alignment**
    - Accurately calculates the exact bounding box and depth ratio below the baseline using `dvisvgm`.
    - Automates Word via AppleScript to adjust font position shifts, ensuring equations sit evenly on the text line with no baseline misalignment.
 
-5. **⚙️ LaTeX Path Configuration in Help Menu**
-   - Access **Help -> ⚙️ Configure LaTeX Path...** to verify your `latex`, `dvipng`, and `dvisvgm` binaries.
-   - Supports custom binary paths or convenient presets (`/Library/TeX/texbin`, `/opt/homebrew/bin`, `/usr/local/bin`), saved permanently in `NSUserDefaults`.
+10. **⚙️ LaTeX Path & Preamble Configuration**
+    - Access **Help -> ⚙️ Configure LaTeX Path...** and **Help -> ⚙️ Configure LaTeX Preamble...** to customize your TeX engine and packages.
 
-6. **🛡️ Zero "Grant File Access" Prompts (Word Sandbox Optimized)**
-   - Generated equations are placed directly into Word's own secure container sandbox (`~/Library/Containers/com.microsoft.Word/Data/tmp/`).
-   - Word reads and inserts pictures 100% silently with no annoying file access permission popups.
+11. **🛡️ Zero "Grant File Access" Prompts (Word Sandbox Optimized)**
+    - Generated equations are placed directly into Word's own secure container sandbox (`~/Library/Containers/com.microsoft.Word/Data/tmp/`).
+    - Word reads and inserts pictures 100% silently with no annoying file access permission popups.
 
-7. **🌐 Bilingual Interface**
-   - Toggle between **Khmer 🇰🇭** and **English 🇺🇸** with a single click at any time.
+12. **🌐 Bilingual Interface**
+    - Toggle between **Khmer 🇰🇭** and **English 🇺🇸** with a single click at any time.
 
 ---
 
@@ -55,8 +74,10 @@
 |---|---|
 | **`Enter`** or **`⌘ + Enter`** | Insert equation into Microsoft Word immediately (Auto Word Mode) |
 | **`⌘ + I`** | Insert into Word |
+| **`⌘ + ⇧ + T`** | Insert Khmer Text in Math Mode (`\text{...}`) |
 | **`⌥ + \`** or **`⌥ + T`** | Toggle TeX (Convert LaTeX selection in Word) |
 | **`⌘ + C`** | Copy 300 DPI high-resolution image to clipboard |
+| **`⌘ + ⇧ + H`** | Open Equation History modal |
 | **`⌘ + F`** | Insert Fraction (`\frac{}{}`) |
 | **`⌘ + R`** | Insert Square Root (`\sqrt{}`) |
 | **`⇧ + ⌘ + R`** | Insert N-th Root (`\sqrt[n]{}`) |

@@ -17,6 +17,8 @@
 @interface TeXResult : NSObject
 @property (assign, nonatomic) BOOL success;
 @property (copy, nonatomic) NSString *pngPath;
+@property (copy, nonatomic) NSString *svgPath;
+@property (copy, nonatomic) NSString *pdfPath;
 @property (assign, nonatomic) double depth;
 @property (assign, nonatomic) double height;
 @property (assign, nonatomic) double width;
@@ -30,6 +32,8 @@
     if (self) {
         _success = NO;
         _pngPath = @"";
+        _svgPath = @"";
+        _pdfPath = @"";
         _depth = 3.5;
         _height = 14.0;
         _width = 70.0;
@@ -78,7 +82,10 @@
     [fileMenu addItemWithTitle:@"Open Microsoft Word" action:@selector(openWordMenu:) keyEquivalent:@"o"];
     [fileMenu addItemWithTitle:@"Insert into Word" action:@selector(insertToWordMenu:) keyEquivalent:@"i"];
     [fileMenu addItemWithTitle:@"Toggle TeX (From Word Selection)" action:@selector(toggleTeXMenu:) keyEquivalent:@"\\"];
+    [fileMenu addItem:[NSMenuItem separatorItem]];
     [fileMenu addItemWithTitle:@"Save as PNG Image..." action:@selector(savePNG:) keyEquivalent:@"s"];
+    [fileMenu addItemWithTitle:@"Save as SVG..." action:@selector(saveSVG:) keyEquivalent:@""];
+    [fileMenu addItemWithTitle:@"Save as Vector PDF..." action:@selector(savePDF:) keyEquivalent:@""];
     [fileMenu addItemWithTitle:@"Save as LaTeX..." action:@selector(saveLaTeX:) keyEquivalent:@""];
     [fileMenu addItem:[NSMenuItem separatorItem]];
     [fileMenu addItemWithTitle:@"Close Window" action:@selector(performClose:) keyEquivalent:@"w"];
@@ -97,6 +104,10 @@
     [editMenu addItemWithTitle:@"Select All" action:@selector(selectAll:) keyEquivalent:@"a"];
     [editMenu addItem:[NSMenuItem separatorItem]];
     [editMenu addItemWithTitle:@"Toggle TeX" action:@selector(toggleTeXMenu:) keyEquivalent:@"\\"];
+    [editMenu addItem:[NSMenuItem separatorItem]];
+    [editMenu addItemWithTitle:@"Insert Khmer Text..." action:@selector(insertKhmerTextMenu:) keyEquivalent:@"T"];
+    [editMenu addItemWithTitle:@"Equation History..." action:@selector(historyMenu:) keyEquivalent:@"H"];
+    [editMenu addItemWithTitle:@"Favorites..." action:@selector(favoritesMenu:) keyEquivalent:@""];
     [editMenuItem setSubmenu:editMenu];
     [mainMenu addItem:editMenuItem];
 
@@ -106,6 +117,8 @@
     [helpMenu addItemWithTitle:@"Keyboard Shortcuts Guide..." action:@selector(showHelp:) keyEquivalent:@"?"];
     [helpMenu addItemWithTitle:@"Configure LaTeX Path..." action:@selector(showLaTeXConfig:) keyEquivalent:@""];
     [helpMenu addItemWithTitle:@"Configure LaTeX Preamble..." action:@selector(showLaTeXPreambleConfig:) keyEquivalent:@""];
+    [helpMenu addItem:[NSMenuItem separatorItem]];
+    [helpMenu addItemWithTitle:@"Check for Updates..." action:@selector(checkForUpdatesMenu:) keyEquivalent:@""];
     [helpMenu addItem:[NSMenuItem separatorItem]];
     [helpMenu addItemWithTitle:@"About Mathtype-kh..." action:@selector(showAbout:) keyEquivalent:@""];
     [helpMenuItem setSubmenu:helpMenu];
@@ -262,6 +275,16 @@
         dispatch_async(dispatch_get_main_queue(), ^{
             [self handleToggleTeX];
         });
+    } else if ([request containsString:@"/eval"]) {
+        NSRange bodyRange = [request rangeOfString:@"\r\n\r\n"];
+        if (bodyRange.location == NSNotFound) bodyRange = [request rangeOfString:@"\n\n"];
+        NSString *body = @"";
+        if (bodyRange.location != NSNotFound) {
+            body = [request substringFromIndex:bodyRange.location + bodyRange.length];
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.webView evaluateJavaScript:body completionHandler:nil];
+        });
     }
     
     NSString *httpResponse = [NSString stringWithFormat:
@@ -307,6 +330,7 @@
     NSString *latexBin = [texBin stringByAppendingPathComponent:@"latex"];
     NSString *dvipngBin = [texBin stringByAppendingPathComponent:@"dvipng"];
     NSString *dvisvgmBin = [texBin stringByAppendingPathComponent:@"dvisvgm"];
+    NSString *dvipdfmxBin = [texBin stringByAppendingPathComponent:@"dvipdfmx"];
 
     if (![[NSFileManager defaultManager] fileExistsAtPath:latexBin]) {
         result.errorMessage = [NSString stringWithFormat:@"LaTeX binary not found in %@", texBin];
@@ -373,7 +397,7 @@
         [dvipngTask waitUntilExit];
     }
 
-    // 3. Run dvisvgm to extract exact baseline depth & dimensions
+    // 3. Run dvisvgm to extract exact baseline depth & dimensions and save SVG
     NSString *svgFile = [tempDir stringByAppendingPathComponent:@"equation.svg"];
     if ([[NSFileManager defaultManager] fileExistsAtPath:dvisvgmBin]) {
         NSTask *dvisvgmTask = [[NSTask alloc] init];
@@ -385,6 +409,7 @@
         [dvisvgmTask waitUntilExit];
 
         if ([[NSFileManager defaultManager] fileExistsAtPath:svgFile]) {
+            result.svgPath = svgFile;
             NSString *svgContent = [NSString stringWithContentsOfFile:svgFile encoding:NSUTF8StringEncoding error:nil];
             NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"viewBox\\s*=\\s*['\"]\\s*([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)" options:0 error:nil];
             NSTextCheckingResult *match = [regex firstMatchInString:svgContent options:0 range:NSMakeRange(0, [svgContent length])];
@@ -401,6 +426,23 @@
                 }
                 std::cout << "[TeX Engine] Exact Bounding Box: width=" << w << "pt, height=" << h << "pt, depth=" << depth << "pt, ratio=" << result.ratio << std::endl;
             }
+        }
+    }
+
+    // 3b. Run dvipdfmx to generate standalone vector PDF
+    NSString *pdfFile = [tempDir stringByAppendingPathComponent:@"equation.pdf"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:dvipdfmxBin]) {
+        NSTask *dvipdfmxTask = [[NSTask alloc] init];
+        dvipdfmxTask.environment = env;
+        dvipdfmxTask.currentDirectoryPath = tempDir;
+        dvipdfmxTask.launchPath = dvipdfmxBin;
+        dvipdfmxTask.arguments = @[@"-o", @"equation.pdf", @"equation.dvi"];
+        [dvipdfmxTask launch];
+        [dvipdfmxTask waitUntilExit];
+
+        if ([[NSFileManager defaultManager] fileExistsAtPath:pdfFile]) {
+            result.pdfPath = pdfFile;
+            std::cout << "[TeX Engine] Generated vector PDF: " << [pdfFile UTF8String] << std::endl;
         }
     }
 
@@ -573,6 +615,65 @@
             [preamble writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
             std::cout << "[LaTeX Config] Updated LaTeX preamble." << std::endl;
         }
+    } else if ([type isEqualToString:@"saveSVG"]) {
+        NSString *rawLatex = body[@"latex"] ? [NSString stringWithFormat:@"%@", body[@"latex"]] : @"";
+        double fontSize = body[@"fontSize"] ? [body[@"fontSize"] doubleValue] : 14.0;
+        if (fontSize <= 0) fontSize = 14.0;
+        
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize];
+            if (texRes.svgPath && [[NSFileManager defaultManager] fileExistsAtPath:texRes.svgPath]) {
+                NSData *svgData = [NSData dataWithContentsOfFile:texRes.svgPath];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSSavePanel *savePanel = [NSSavePanel savePanel];
+                    [savePanel setNameFieldStringValue:@"equation.svg"];
+                    [savePanel setAllowedFileTypes:@[@"svg"]];
+                    [savePanel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse result) {
+                        if (result == NSModalResponseOK) {
+                            NSURL *url = [savePanel URL];
+                            [svgData writeToURL:url atomically:YES];
+                            [self.webView evaluateJavaScript:@"showStatus('✓ បានរក្សាទុកជា SVG រួចរាល់!', true)" completionHandler:nil];
+                        }
+                    }];
+                });
+            } else {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self.webView evaluateJavaScript:@"showStatus('កំហុសក្នុងការបង្កើត SVG', false)" completionHandler:nil];
+                });
+            }
+        });
+    } else if ([type isEqualToString:@"savePDF"]) {
+        NSString *rawLatex = body[@"latex"] ? [NSString stringWithFormat:@"%@", body[@"latex"]] : @"";
+        double fontSize = body[@"fontSize"] ? [body[@"fontSize"] doubleValue] : 14.0;
+        if (fontSize <= 0) fontSize = 14.0;
+        
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+            TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize];
+            if (texRes.pdfPath && [[NSFileManager defaultManager] fileExistsAtPath:texRes.pdfPath]) {
+                NSData *pdfData = [NSData dataWithContentsOfFile:texRes.pdfPath];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSSavePanel *savePanel = [NSSavePanel savePanel];
+                    [savePanel setNameFieldStringValue:@"equation.pdf"];
+                    [savePanel setAllowedFileTypes:@[@"pdf"]];
+                    [savePanel beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse result) {
+                        if (result == NSModalResponseOK) {
+                            NSURL *url = [savePanel URL];
+                            [pdfData writeToURL:url atomically:YES];
+                            [self.webView evaluateJavaScript:@"showStatus('✓ បានរក្សាទុកជា Vector PDF រួចរាល់!', true)" completionHandler:nil];
+                        }
+                    }];
+                });
+            } else {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self.webView evaluateJavaScript:@"showStatus('កំហុសក្នុងការបង្កើត PDF', false)" completionHandler:nil];
+                });
+            }
+        });
+    } else if ([type isEqualToString:@"openURL"]) {
+        NSString *urlStr = [NSString stringWithFormat:@"%@", body[@"url"] ?: @""];
+        if ([urlStr length] > 0) {
+            [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:urlStr]];
+        }
     } else if ([type isEqualToString:@"getPreamble"]) {
         NSString *preamble = [self currentTeXPreamble];
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@[preamble] options:0 error:nil];
@@ -702,8 +803,32 @@
     [self.webView evaluateJavaScript:@"actionSavePNG()" completionHandler:nil];
 }
 
+- (void)saveSVG:(id)sender {
+    [self.webView evaluateJavaScript:@"actionSaveSVG()" completionHandler:nil];
+}
+
+- (void)savePDF:(id)sender {
+    [self.webView evaluateJavaScript:@"actionSavePDF()" completionHandler:nil];
+}
+
 - (void)saveLaTeX:(id)sender {
     [self.webView evaluateJavaScript:@"actionSaveLaTeX()" completionHandler:nil];
+}
+
+- (void)checkForUpdatesMenu:(id)sender {
+    [self.webView evaluateJavaScript:@"actionCheckUpdates()" completionHandler:nil];
+}
+
+- (void)insertKhmerTextMenu:(id)sender {
+    [self.webView evaluateJavaScript:@"insertKhmerText()" completionHandler:nil];
+}
+
+- (void)historyMenu:(id)sender {
+    [self.webView evaluateJavaScript:@"openHistoryModal()" completionHandler:nil];
+}
+
+- (void)favoritesMenu:(id)sender {
+    [self.webView evaluateJavaScript:@"openFavoritesModal()" completionHandler:nil];
 }
 
 - (void)showAbout:(id)sender {
@@ -735,7 +860,7 @@
     if (saved && [saved stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length > 0) {
         return saved;
     }
-    return @"\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage{xcolor}\n\\nopagecolor";
+    return @"\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage[version=4]{mhchem}\n\\usepackage{xcolor}\n\\nopagecolor";
 }
 
 - (void)toggleTeXMenu:(id)sender {

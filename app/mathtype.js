@@ -15,6 +15,8 @@ const i18n = {
     menuNew: "បង្កើតសមីការថ្មី",
     menuInsertWord: "បញ្ចូលទៅ Word",
     menuSavePNG: "រក្សាទុកជារូបភាព PNG...",
+    menuSaveSVG: "រក្សាទុកជា SVG Vector...",
+    menuSavePDF: "រក្សាទុកជា Vector PDF...",
     menuSaveLaTeX: "រក្សាទុកជា LaTeX...",
     menuPrint: "បោះពុម្ព...",
     menuClose: "បិទផ្ទាំង",
@@ -25,8 +27,12 @@ const i18n = {
     menuHelp: "ជំនួយ",
     labelOpenWord: "បើក Word",
     labelInsertWord: "បញ្ចូលទៅ Word",
-    labelCopyWord: "ចម្លងទៅ Word",
+    labelCopyWord: "ចម្លង",
     labelClear: "សម្អាត",
+    labelHistory: "ប្រវត្តិ",
+    labelFavorites: "សំណព្វ",
+    tabChem: "🧪 គីមីវិទ្យា",
+    menuCheckUpdates: "🔄 ពិនិត្យមើលកំណែថ្មី...",
     statusReady: "ត្រៀមរួចរាល់",
     statusInserted: "✓ បានបញ្ចូលសមីការទៅកាន់ Word ដោយជោគជ័យ!",
     statusCopied: "✓ បានចម្លងរូបមន្តរួចរាល់! អាចចុច ⌘V ក្នុង Word",
@@ -37,6 +43,8 @@ const i18n = {
     menuNew: "New Equation",
     menuInsertWord: "Insert into Word",
     menuSavePNG: "Save as PNG Image...",
+    menuSaveSVG: "Save as SVG Vector...",
+    menuSavePDF: "Save as Vector PDF...",
     menuSaveLaTeX: "Save as LaTeX...",
     menuPrint: "Print...",
     menuClose: "Close Window",
@@ -47,8 +55,12 @@ const i18n = {
     menuHelp: "Help",
     labelOpenWord: "Open Word",
     labelInsertWord: "Insert into Word",
-    labelCopyWord: "Copy to Word",
+    labelCopyWord: "Copy",
     labelClear: "Clear",
+    labelHistory: "History",
+    labelFavorites: "Favorites",
+    tabChem: "🧪 Chemistry",
+    menuCheckUpdates: "🔄 Check for Updates...",
     statusReady: "Ready",
     statusInserted: "✓ Successfully inserted equation into Microsoft Word!",
     statusCopied: "✓ Copied equation! Now press ⌘V in Word.",
@@ -148,8 +160,9 @@ const SYMBOL_PALETTES = [
       { label: "←", desc: "Left arrow", latex: "\\leftarrow " },
       { label: "→", desc: "Right arrow", latex: "\\rightarrow " },
       { label: "↔", desc: "Left-right arrow", latex: "\\leftrightarrow " },
-      { label: "↑", desc: "Up arrow", latex: "\\uparrow " },
-      { label: "↓", desc: "Down arrow", latex: "\\downarrow " },
+      { label: "↑", desc: "Up arrow (ឧស្ម័ន)", latex: "\\uparrow " },
+      { label: "↓", desc: "Down arrow (កករ)", latex: "\\downarrow " },
+      { label: "⇌", desc: "Equilibrium arrow (លំនឹងគីមី)", latex: "\\rightleftharpoons " },
       { label: "⇐", desc: "Double left arrow", latex: "\\Leftarrow " },
       { label: "⇒", desc: "Implies (នាំឱ្យ)", latex: "\\Rightarrow " },
       { label: "⇔", desc: "Equivalence (សមមូល)", latex: "\\Leftrightarrow " },
@@ -414,6 +427,15 @@ const TABBED_EXPRESSIONS = {
   geometry: [
     { label: "A = π r²", desc: "Area of a circle (ក្រឡាផ្ទៃរង្វង់)", latex: "A=\\pi r^{2}" },
     { label: "V = (4/3) π r³", desc: "Volume of a sphere (មាឌស្វ៊ែរ)", latex: "V=\\frac{4}{3}\\pi r^{3}" }
+  ],
+  chemistry: [
+    { label: "2H₂ + O₂ → 2H₂O", desc: "Water synthesis (សំយោគទឹក)", latex: "\\text{2H}_2+\\text{O}_2\\rightarrow\\text{2H}_2\\text{O}" },
+    { label: "CaCO₃ → CaO + CO₂↑", desc: "Thermal decomposition (រំលាយកម្ដៅ)", latex: "\\text{CaCO}_3\\xrightarrow{\\Delta}\\text{CaO}+\\text{CO}_2\\uparrow" },
+    { label: "Ag⁺ + Cl⁻ → AgCl↓", desc: "Precipitation reaction (កករ)", latex: "\\text{Ag}^++\\text{Cl}^-\\rightarrow\\text{AgCl}\\downarrow" },
+    { label: "N₂ + 3H₂ ⇌ 2NH₃", desc: "Chemical equilibrium (លំនឹងគីមី)", latex: "\\text{N}_2+\\text{3H}_2\\rightleftharpoons\\text{2NH}_3" },
+    { label: "pH = -log[H⁺]", desc: "pH formula (រូបមន្ត pH)", latex: "\\text{pH}=-\\log[\\text{H}^+]" },
+    { label: "CH₄ + 2O₂ → CO₂ + 2H₂O", desc: "Combustion (ចំហេះមេតាន)", latex: "\\text{CH}_4+\\text{2O}_2\\rightarrow\\text{CO}_2+\\text{2H}_2\\text{O}" },
+    { label: "SO₄²⁻ / Fe³⁺", desc: "Polyatomic ions (អ៊ីយ៉ុង)", latex: "\\text{SO}_4^{2-},\\;\\text{Fe}^{3+}" }
   ]
 };
 
@@ -454,6 +476,10 @@ function applyLanguage() {
   document.getElementById("menuNew").innerText = dict.menuNew;
   document.getElementById("menuInsertWord").innerText = dict.menuInsertWord;
   document.getElementById("menuSavePNG").innerText = dict.menuSavePNG;
+  const svgMenu = document.getElementById("menuSaveSVG");
+  if (svgMenu) svgMenu.innerText = dict.menuSaveSVG;
+  const pdfMenu = document.getElementById("menuSavePDF");
+  if (pdfMenu) pdfMenu.innerText = dict.menuSavePDF;
   document.getElementById("menuSaveLaTeX").innerText = dict.menuSaveLaTeX;
   document.getElementById("menuPrint").innerText = dict.menuPrint;
   document.getElementById("menuClose").innerText = dict.menuClose;
@@ -462,11 +488,19 @@ function applyLanguage() {
   document.getElementById("menuView").innerText = dict.menuView;
   document.getElementById("menuStyle").innerText = dict.menuStyle;
   document.getElementById("menuHelp").innerText = dict.menuHelp;
+  const checkUpdMenu = document.getElementById("menuCheckUpdates");
+  if (checkUpdMenu) checkUpdMenu.innerText = dict.menuCheckUpdates;
 
   document.getElementById("labelOpenWord").innerText = dict.labelOpenWord;
   document.getElementById("labelInsertWord").innerText = dict.labelInsertWord;
   document.getElementById("labelCopyWord").innerText = dict.labelCopyWord;
   document.getElementById("labelClear").innerText = dict.labelClear;
+  const lblHist = document.getElementById("labelHistory");
+  if (lblHist) lblHist.innerText = dict.labelHistory;
+  const lblFav = document.getElementById("labelFavorites");
+  if (lblFav) lblFav.innerText = dict.labelFavorites;
+  const tabCh = document.getElementById("tabChem");
+  if (tabCh) tabCh.innerText = dict.tabChem;
   document.getElementById("statusMessage").innerText = dict.statusReady;
 }
 
@@ -759,6 +793,11 @@ function setupShortcuts() {
           e.preventDefault();
           actionCopyPNG();
         }
+      } else if (e.key === "t" || e.key === "T") {
+        if (e.shiftKey) {
+          e.preventDefault();
+          insertKhmerText();
+        }
       } else if (e.key === "f" || e.key === "F") {
         e.preventDefault();
         insertLatex("\\frac{#?}{#0}");
@@ -780,7 +819,7 @@ function setupShortcuts() {
         insertLatex("_{#0}^{#?}");
       }
     }
-  });
+  }, true);
 }
 
 // ============================================================================
@@ -898,6 +937,8 @@ async function actionInsertIntoWord() {
       return;
     }
 
+    saveToHistory(latex);
+
     const dataUrl = await generateEquationImageDataUrl();
     const ratio = calculateBaselineRatio(latex);
 
@@ -931,6 +972,7 @@ async function actionCopyPNG() {
   try {
     showStatus(currentLang === 'km' ? "⚡ កំពុងចងក្រងសមីការតាម LaTeX Kernel..." : "⚡ Compiling with LaTeX Kernel...", false);
     const latex = mf.getValue("latex") || "x=0";
+    saveToHistory(latex);
     const dataUrl = await generateEquationImageDataUrl();
     const ratio = calculateBaselineRatio(latex);
 
@@ -1381,3 +1423,361 @@ function closeModal() {
     footer.innerHTML = '<button class="action-btn primary-action" onclick="closeModal()">OK</button>';
   }
 }
+
+// ============================================================================
+// 10. ADVANCED FEATURES: KHMER TEXT, HISTORY, FAVORITES, SVG/PDF, UPDATES
+// ============================================================================
+
+/**
+ * 1. Khmer Text in Math Mode (\text{...})
+ */
+function insertKhmerText() {
+  if (!mf) return;
+  insertLatex("\\text{#?}");
+  mf.focus();
+}
+
+/**
+ * 2. Equation History & Favorites Management
+ */
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem("mathtype_history") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveToHistory(latex) {
+  if (!latex || !latex.trim()) return;
+  const clean = latex.trim();
+  let list = getHistory();
+  list = list.filter(item => item.latex !== clean);
+  list.unshift({ latex: clean, time: Date.now() });
+  if (list.length > 30) list = list.slice(0, 30);
+  try {
+    localStorage.setItem("mathtype_history", JSON.stringify(list));
+  } catch (e) {}
+}
+
+function getFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem("mathtype_favorites") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function toggleFavorite(latex) {
+  if (!latex || !latex.trim()) return false;
+  const clean = latex.trim();
+  let favs = getFavorites();
+  const idx = favs.findIndex(item => item.latex === clean);
+  let isFav = false;
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    isFav = false;
+  } else {
+    favs.unshift({ latex: clean, time: Date.now() });
+    isFav = true;
+  }
+  try {
+    localStorage.setItem("mathtype_favorites", JSON.stringify(favs));
+  } catch (e) {}
+  return isFav;
+}
+
+function deleteHistoryItem(index) {
+  let list = getHistory();
+  list.splice(index, 1);
+  try {
+    localStorage.setItem("mathtype_history", JSON.stringify(list));
+  } catch (e) {}
+  openHistoryModal();
+}
+
+function clearAllHistory() {
+  localStorage.removeItem("mathtype_history");
+  openHistoryModal();
+}
+
+function deleteFavoriteItem(index) {
+  let favs = getFavorites();
+  favs.splice(index, 1);
+  try {
+    localStorage.setItem("mathtype_favorites", JSON.stringify(favs));
+  } catch (e) {}
+  openFavoritesModal();
+}
+
+function useEquationFromList(latex) {
+  if (mf) {
+    mf.setValue(latex);
+    mf.focus();
+  }
+  closeModal();
+  showStatus(currentLang === 'km' ? "✓ បានជ្រើសរើសរូបមន្ត!" : "✓ Loaded equation!", true);
+}
+
+function toggleFavoriteFromModal(latex, isHistory) {
+  toggleFavorite(latex);
+  if (isHistory) {
+    openHistoryModal();
+  } else {
+    openFavoritesModal();
+  }
+}
+
+function openHistoryModal() {
+  const list = getHistory();
+  const favs = getFavorites();
+  const favSet = new Set(favs.map(f => f.latex));
+
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const footer = document.getElementById("modalFooter");
+  
+  title.innerText = currentLang === 'km' ? "🕒 ប្រវត្តិសមីការ (Equation History)" : "🕒 Equation History";
+  
+  if (list.length === 0) {
+    body.innerHTML = `
+      <div style="text-align: center; padding: 30px; color: #64748b;">
+        <p style="font-size: 15px; margin-bottom: 8px;">📂 ${currentLang === 'km' ? "មិនទាន់មានប្រវត្តិសមីការនៅឡើយទេ" : "No equation history yet"}</p>
+        <p style="font-size: 12px;">${currentLang === 'km' ? "សមីការដែលអ្នកបញ្ចូលទៅ Word ឬចម្លង នឹងត្រូវរក្សាទុកនៅទីនេះដោយស្វ័យប្រវត្តិ។" : "Equations you insert into Word or copy will automatically appear here."}</p>
+      </div>
+    `;
+    footer.innerHTML = `<button class="action-btn" onclick="closeModal()">OK</button>`;
+  } else {
+    let html = `<div class="history-list">`;
+    list.forEach((item, idx) => {
+      const isFav = favSet.has(item.latex);
+      const safeLatex = item.latex.replace(/\\/g, "\\\\").replace(/"/g, "&quot;").replace(/'/g, "\\'");
+      html += `
+        <div class="history-card">
+          <div class="history-eq-preview" id="hist_preview_${idx}" onclick="useEquationFromList('${safeLatex}')"></div>
+          <div class="history-actions">
+            <button class="btn-star ${isFav ? 'active' : ''}" title="${isFav ? 'Remove Favorite' : 'Add to Favorites'}" onclick="toggleFavoriteFromModal('${safeLatex}', true)">★</button>
+            <button class="action-btn insert-word-action" style="padding: 2px 10px; font-size: 11.5px;" onclick="useEquationFromList('${safeLatex}')">${currentLang === 'km' ? "ប្រើ" : "Use"}</button>
+            <button class="btn-delete-item" title="Delete" onclick="deleteHistoryItem(${idx})">✕</button>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    body.innerHTML = html;
+    footer.innerHTML = `
+      <div style="display: flex; justify-content: space-between; width: 100%;">
+        <button class="action-btn danger-hover-btn" onclick="clearAllHistory()">${currentLang === 'km' ? "សម្អាតប្រវត្តិទាំងអស់" : "Clear All History"}</button>
+        <button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "បិទ" : "Close"}</button>
+      </div>
+    `;
+
+    setTimeout(() => {
+      list.forEach((item, idx) => {
+        const el = document.getElementById(`hist_preview_${idx}`);
+        if (el) {
+          try {
+            katex.render(item.latex, el, { throwOnError: false, displayMode: false });
+          } catch(e) {
+            el.innerText = item.latex;
+          }
+        }
+      });
+    }, 50);
+  }
+
+  document.getElementById("modalOverlay").classList.remove("hidden");
+}
+
+function openFavoritesModal() {
+  const favs = getFavorites();
+
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const footer = document.getElementById("modalFooter");
+  
+  title.innerText = currentLang === 'km' ? "⭐ រូបមន្តសំណព្វ (Favorites)" : "⭐ Favorite Formulas";
+  
+  if (favs.length === 0) {
+    body.innerHTML = `
+      <div style="text-align: center; padding: 30px; color: #64748b;">
+        <p style="font-size: 15px; margin-bottom: 8px;">⭐ ${currentLang === 'km' ? "មិនទាន់មានរូបមន្តសំណព្វនៅឡើយទេ" : "No favorite equations yet"}</p>
+        <p style="font-size: 12px;">${currentLang === 'km' ? "អ្នកអាចចុចផ្កាយ ★ ក្នុងបញ្ជីប្រវត្តិ ដើម្បីរក្សាទុករូបមន្តដែលប្រើញឹកញាប់។" : "Click the star icon ★ on any equation in History to bookmark it here."}</p>
+      </div>
+    `;
+    footer.innerHTML = `<button class="action-btn" onclick="closeModal()">OK</button>`;
+  } else {
+    let html = `<div class="history-list">`;
+    favs.forEach((item, idx) => {
+      const safeLatex = item.latex.replace(/\\/g, "\\\\").replace(/"/g, "&quot;").replace(/'/g, "\\'");
+      html += `
+        <div class="history-card">
+          <div class="history-eq-preview" id="fav_preview_${idx}" onclick="useEquationFromList('${safeLatex}')"></div>
+          <div class="history-actions">
+            <button class="action-btn insert-word-action" style="padding: 2px 10px; font-size: 11.5px;" onclick="useEquationFromList('${safeLatex}')">${currentLang === 'km' ? "ប្រើ" : "Use"}</button>
+            <button class="btn-delete-item" title="Delete" onclick="deleteFavoriteItem(${idx})">✕</button>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    body.innerHTML = html;
+    footer.innerHTML = `<button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "បិទ" : "Close"}</button>`;
+
+    setTimeout(() => {
+      favs.forEach((item, idx) => {
+        const el = document.getElementById(`fav_preview_${idx}`);
+        if (el) {
+          try {
+            katex.render(item.latex, el, { throwOnError: false, displayMode: false });
+          } catch(e) {
+            el.innerText = item.latex;
+          }
+        }
+      });
+    }, 50);
+  }
+
+  document.getElementById("modalOverlay").classList.remove("hidden");
+}
+
+/**
+ * 3. Vector SVG & PDF Export
+ */
+async function actionSaveSVG() {
+  try {
+    showStatus(currentLang === 'km' ? "⚡ កំពុងរៀបចំរូបភាព Vector SVG..." : "⚡ Preparing Vector SVG...", false);
+    const latex = mf.getValue("latex");
+    if (!latex || !latex.trim()) {
+      showStatus(currentLang === 'km' ? "សូមបញ្ចូលសមីការជាមុនសិន!" : "Please enter an equation first!", true);
+      return;
+    }
+    saveToHistory(latex);
+
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+      window.webkit.messageHandlers.nativeApp.postMessage({
+        type: "saveSVG",
+        latex: latex,
+        fontSize: currentEquationSize
+      });
+    } else {
+      let svgMarkup = "";
+      try {
+        const mathML = mf.getValue("math-ml");
+        const blob = new Blob([mathML], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "equation.svg";
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        showStatus("SVG Export Error: " + e.message);
+      }
+    }
+  } catch (err) {
+    showStatus("SVG Error: " + err.message);
+  }
+}
+
+async function actionSavePDF() {
+  try {
+    showStatus(currentLang === 'km' ? "⚡ កំពុងរៀបចំឯកសារ Vector PDF..." : "⚡ Preparing Vector PDF...", false);
+    const latex = mf.getValue("latex");
+    if (!latex || !latex.trim()) {
+      showStatus(currentLang === 'km' ? "សូមបញ្ចូលសមីការជាមុនសិន!" : "Please enter an equation first!", true);
+      return;
+    }
+    saveToHistory(latex);
+
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+      window.webkit.messageHandlers.nativeApp.postMessage({
+        type: "savePDF",
+        latex: latex,
+        fontSize: currentEquationSize
+      });
+    } else {
+      window.print();
+    }
+  } catch (err) {
+    showStatus("PDF Error: " + err.message);
+  }
+}
+
+/**
+ * 4. GitHub Releases Auto-Update Checker
+ */
+async function actionCheckUpdates() {
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const footer = document.getElementById("modalFooter");
+  
+  title.innerText = currentLang === 'km' ? "🔄 ពិនិត្យមើលកំណែថ្មី" : "🔄 Check for Updates";
+  body.innerHTML = `
+    <div style="text-align: center; padding: 25px;">
+      <p style="font-size: 14px; color: #3b82f6;">⚡ ${currentLang === 'km' ? "កំពុងពិនិត្យកំណែថ្មីពី GitHub..." : "Checking for updates from GitHub..."}</p>
+    </div>
+  `;
+  footer.innerHTML = `<button class="action-btn" onclick="closeModal()">Cancel</button>`;
+  document.getElementById("modalOverlay").classList.remove("hidden");
+
+  try {
+    const currentVersion = "7.4.4";
+    const res = await fetch("https://api.github.com/repos/Krotreaksmey2200/Mathtype_kh/releases/latest");
+    if (!res.ok) throw new Error("Could not fetch release info");
+    const data = await res.json();
+    const latestTag = data.tag_name || "";
+    const cleanLatest = latestTag.replace(/^v/, "");
+
+    const isNewer = cleanLatest.localeCompare(currentVersion, undefined, { numeric: true, sensitivity: 'base' }) > 0;
+
+    if (isNewer) {
+      body.innerHTML = `
+        <div style="text-align: center; margin-bottom: 12px;">
+          <h3 style="color: #107c41; font-size: 16px;">🎉 ${currentLang === 'km' ? "មានកំណែថ្មីអាចទាញយកបាន!" : "New Update Available!"}</h3>
+          <p style="font-size: 13px; color: #475569; margin: 4px 0 10px 0;">
+            ${currentLang === 'km' ? "កំណែបច្ចុប្បន្ន" : "Current"}: <b>v${currentVersion}</b> ➔ ${currentLang === 'km' ? "កំណែថ្មី" : "Latest"}: <b style="color: #2563eb;">${latestTag}</b>
+          </p>
+        </div>
+        <div class="update-box">
+          <p style="font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #15803d;">📝 ${currentLang === 'km' ? "កំណត់ត្រានៃការផ្លាស់ប្តូរ (Changelog)" : "Release Notes"}:</p>
+          <div style="font-size: 11.5px; line-height: 1.5; color: #334155; max-height: 140px; overflow-y: auto; white-space: pre-wrap;">${data.body || "Bug fixes and improvements."}</div>
+        </div>
+      `;
+      footer.innerHTML = `
+        <div style="display: flex; justify-content: flex-end; gap: 8px; width: 100%;">
+          <button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "ពេលក្រោយ" : "Later"}</button>
+          <button class="action-btn insert-word-action" onclick="openExternalUrl('${data.html_url}'); closeModal();">⬇️ ${currentLang === 'km' ? "ទាញយកកំណែថ្មី" : "Download Update"}</button>
+        </div>
+      `;
+    } else {
+      body.innerHTML = `
+        <div style="text-align: center; padding: 25px;">
+          <div style="font-size: 36px; margin-bottom: 8px;">✓</div>
+          <h3 style="color: #107c41; font-size: 16px; margin-bottom: 6px;">${currentLang === 'km' ? "លោកអ្នកកំពុងប្រើប្រាស់កំណែថ្មីចុងក្រោយបង្អស់!" : "You are up to date!"}</h3>
+          <p style="font-size: 13px; color: #64748b;">Mathtype-kh v${currentVersion} ${currentLang === 'km' ? "ជាកំណែចុងក្រោយបំផុតលើ GitHub រួចរាល់ហើយ។" : "is the latest version available."}</p>
+        </div>
+      `;
+      footer.innerHTML = `<button class="action-btn insert-word-action" onclick="closeModal()">OK</button>`;
+    }
+  } catch (err) {
+    body.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #64748b;">
+        <p style="color: #ef4444; font-size: 14px; margin-bottom: 6px;">⚠️ ${currentLang === 'km' ? "មិនអាចតភ្ជាប់ទៅកាន់ GitHub បានទេ" : "Could not connect to GitHub"}</p>
+        <p style="font-size: 12px;">${err.message}</p>
+      </div>
+    `;
+    footer.innerHTML = `<button class="action-btn" onclick="closeModal()">OK</button>`;
+  }
+}
+
+function openExternalUrl(url) {
+  if (!url) return;
+  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+    window.webkit.messageHandlers.nativeApp.postMessage({ type: "openURL", url: url });
+  } else {
+    window.open(url, "_blank");
+  }
+}
+
+

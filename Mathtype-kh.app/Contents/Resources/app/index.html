@@ -21,6 +21,8 @@
             <div class="dropdown-separator"></div>
             <div class="dropdown-row" onclick="actionInsertIntoWord()"><span class="item-name" id="menuInsertWord">Insert into Word</span><span class="item-shortcut">⌘I</span></div>
             <div class="dropdown-row" onclick="actionSavePNG()"><span class="item-name" id="menuSavePNG">Save as PNG Image...</span><span class="item-shortcut">⌘S</span></div>
+            <div class="dropdown-row" onclick="actionSaveSVG()"><span class="item-name" id="menuSaveSVG">Save as SVG Vector...</span></div>
+            <div class="dropdown-row" onclick="actionSavePDF()"><span class="item-name" id="menuSavePDF">Save as Vector PDF...</span></div>
             <div class="dropdown-row" onclick="actionSaveLaTeX()"><span class="item-name" id="menuSaveLaTeX">Save as LaTeX...</span></div>
             <div class="dropdown-separator"></div>
             <div class="dropdown-row" onclick="window.print()"><span class="item-name" id="menuPrint">Print...</span><span class="item-shortcut">⌘P</span></div>
@@ -87,6 +89,7 @@
             <div class="dropdown-row" onclick="showLaTeXConfigModal()"><span class="item-name" id="menuLatexConfig">⚙️ កំណត់ផ្លូវ LaTeX Path (Config LaTeX)...</span></div>
             <div class="dropdown-row" onclick="showLaTeXPreambleModal()"><span class="item-name" id="menuLatexPreamble">📜 កំណត់ LaTeX Preamble...</span></div>
             <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="actionCheckUpdates()"><span class="item-name" id="menuCheckUpdates">🔄 ពិនិត្យមើលកំណែថ្មី (Check for Updates)...</span></div>
             <div class="dropdown-row" onclick="showAboutModal()"><span class="item-name">About Mathtype-kh...</span></div>
           </div>
         </div>
@@ -118,6 +121,7 @@
           <button class="tab-btn" data-tab="sets">Sets</button>
           <button class="tab-btn" data-tab="trig">Trig</button>
           <button class="tab-btn" data-tab="geometry">Geometry</button>
+          <button class="tab-btn" data-tab="chemistry" id="tabChem">🧪 Chemistry</button>
         </div>
         <div class="tabs-content" id="tabsContent"></div>
       </div>
@@ -167,10 +171,39 @@
 
         <!-- 2. Export / Utility Group -->
         <div class="action-btn-group">
+          <!-- Khmer Text Button -->
+          <button class="action-btn khmer-text-btn" onclick="insertKhmerText()" id="btnKhmerText" title="បញ្ចូលអក្សរខ្មែរក្នុងសមីការ (⌘⇧T)">
+            <span>🇰🇭 អក្សរខ្មែរ</span>
+          </button>
+
+          <!-- History Button -->
+          <button class="action-btn secondary-btn" onclick="openHistoryModal()" id="btnHistory" title="ប្រវត្តិសមីការដែលបានវាយកន្លងមក">
+            <svg class="btn-icon icon-muted" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+            <span id="labelHistory">ប្រវត្តិ</span>
+          </button>
+
+          <!-- Favorites Button -->
+          <button class="action-btn secondary-btn" onclick="openFavoritesModal()" id="btnFavorites" title="រូបមន្តសំណព្វ / Favorites">
+            <svg class="btn-icon" style="color: #f59e0b;" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+            <span id="labelFavorites">សំណព្វ</span>
+          </button>
+
+          <div class="toolbar-divider"></div>
+
           <!-- Copy to Word Button -->
           <button class="action-btn secondary-btn" onclick="actionCopyPNG()" id="btnCopyWord" title="ចម្លងរូបមន្តទុកសម្រាប់បិទ (⌘V) ក្នុង Word">
             <svg class="btn-icon icon-muted" viewBox="0 0 24 24"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-            <span id="labelCopyWord">ចម្លងទៅ Word</span>
+            <span id="labelCopyWord">ចម្លង</span>
+          </button>
+
+          <!-- SVG Export -->
+          <button class="action-btn secondary-btn" onclick="actionSaveSVG()" id="btnSaveSVG" title="រក្សាទុកជារូបភាព Vector SVG">
+            <span>SVG</span>
+          </button>
+
+          <!-- PDF Export -->
+          <button class="action-btn secondary-btn" onclick="actionSavePDF()" id="btnSavePDF" title="រក្សាទុកជាឯកសារ Vector PDF">
+            <span>PDF</span>
           </button>
 
           <!-- Copy LaTeX Button -->
