@@ -2,9 +2,10 @@
 
 > **Native 64-bit Mathtype-kh Desktop Application for macOS** with high-resolution **LaTeX Kernel Engine (300 DPI)** and deep **Microsoft Word Automation** with automatic **Baseline Alignment**.
 
-### 📥 កញ្ចប់ដំឡើងសម្រាប់កុំព្យូទ័រផ្សេង (Installer Package):
-👉 **[ទាញយក Mathtype-kh.pkg (Installer)](Mathtype-kh.pkg?raw=true)**  
-*(ចុច Double-Click លើឯកសារ `.pkg` នេះ ដើម្បីដំឡើងចូល `/Applications/Mathtype-kh.app` លើកុំព្យូទ័រ Mac ផ្សេងទៀតបានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
+### 📥 កញ្ចប់ដំឡើងតាម Version Release (Download Installers):
+👉 **[ទាញយក Mathtype-kh-v7.4.4.pkg (All-in-One Installer)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-v7.4.4.pkg)** *(ណែនាំ: ដំឡើងទាំង Mathtype-kh.app និង Word Plugin ក្នុងពេលតែមួយ)*  
+👉 **[ទាញយក Mathtype-kh-WordPlugin-v7.4.4.pkg (Word Plugin Standalone)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-WordPlugin-v7.4.4.pkg)** *(សម្រាប់អ្នកដែលចង់ដំឡើងតែ Plugin លើ Word)*  
+*(ចុច Double-Click លើឯកសារ `.pkg` នេះ ដើម្បីដំឡើងលើកុំព្យូទ័រ Mac បានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
 
 ---
 
