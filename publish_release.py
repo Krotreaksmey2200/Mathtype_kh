@@ -52,16 +52,22 @@ def main():
 
 ### 🌟 លក្ខណៈពិសេសចម្បង (What's New in {tag_name}):
 1. **🇰🇭 មុខងារសរសេរអក្សរខ្មែរក្នុងសមីការ (Khmer Text in Math Mode)**៖ ប៊ូតុង «🇰🇭 អក្សរខ្មែរ» ឬចុច `⌘ + ⇧ + T` ដើម្បីសរសេរអក្សរខ្មែរក្នុងរូបមន្ត
-2. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
-3. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
-4. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
-5. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
-6. **🔄 ប្រព័ន្ធត្រួតពិនិត្យកំណែថ្មី (Auto-Update Checker)**៖ ពិនិត្យកំណែថ្មីពី GitHub ក្នុង Menu Help -> Check for Updates...
+2. **🎯 ប៊ូតុងទាំង ៥ លើ MS Word (Word Ribbon Suite Integration)**៖
+   - បើក Mathtype-kh ភ្លាមៗពី MS Word
+   - កែប្រែសមីការ (Edit Selected Equation) ស្រង់សមីការដែលបានជ្រើសក្នុង Word ទៅកែក្នុង Mathtype-kh ដោយផ្ទាល់
+   - Toggle TeX ($...$) បំប្លែងរវាងអក្សរ TeX និងរូបភាពសមីការ (Smart Paragraph Detection)
+   - Align Selection & Align Document តម្រឹមបន្ទាត់កណ្តាលសមីការ (Mathematical Baseline) ដោយស្វ័យប្រវត្តិកម្រិតខ្ពស់សម្រាប់ `cases`, `matrix`, `aligned`, `int`, និង `frac`
+3. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
+4. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
+5. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
+6. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
+7. **🔄 ប្រព័ន្ធត្រួតពិនិត្យកំណែថ្មី (Auto-Update Checker)**៖ ពិនិត្យកំណែថ្មីពី GitHub ក្នុង Menu Help -> Check for Updates...
 
 ---
 
 ### 📦 ឯកសារដំឡើង (Download Installers):
 - **`Mathtype-kh-{tag_name}.pkg`** (All-in-One Installer): កញ្ចប់ដំឡើងរួម ដំឡើងទាំង Mathtype-kh.app និង Word Plugin (ណែនាំ / Recommended)
+- **`Mathtype-kh.pkg`** (Latest All-in-One): តំណទាញយកកញ្ចប់ដំឡើងចុងក្រោយបំផុត
 - **`Mathtype-kh-WordPlugin-{tag_name}.pkg`** (Word Plugin Standalone): សម្រាប់ដំឡើងតែ Add-in លើ Microsoft Word
 - **`Remove_mathtype_kh-{tag_name}.pkg`** (Uninstaller): សម្រាប់លុប និងសម្អាត Mathtype-kh ទាំងអស់ចេញពីម៉ាស៊ីន
 """
@@ -102,6 +108,7 @@ def main():
 
     assets = [
         (f'Mathtype-kh-{tag_name}.pkg', f'Mathtype-kh-{tag_name}.pkg', f'Mathtype-kh {tag_name} (All-in-One Installer)'),
+        ('Mathtype-kh.pkg', 'Mathtype-kh.pkg', 'Mathtype-kh (All-in-One Installer Latest)'),
         (f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Word Plugin Installer {tag_name} (Standalone)'),
         (f'Remove_mathtype_kh-{tag_name}.pkg', f'Remove_mathtype_kh-{tag_name}.pkg', f'Uninstaller {tag_name}: Completely Remove & Clean Mathtype-kh'),
         ('Remove_mathtype_kh.pkg', 'Remove_mathtype_kh.pkg', 'Uninstaller: Completely Remove & Clean Mathtype-kh')
