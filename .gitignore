@@ -14,8 +14,7 @@ MathType-mac-en-*.pkg
 packaging/MathType-Component.pkg
 packaging/staging/
 
-# Build outputs
+# Python & Build outputs
+__pycache__/
+*.pyc
 src/MathTypeNative
-MathType.app/Contents/MacOS/
-MathType.app/Contents/_CodeSignature/
-MathType.app/Contents/Resources/app/

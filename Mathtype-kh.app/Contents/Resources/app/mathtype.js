@@ -708,8 +708,31 @@ function setupGlobalEvents() {
     }
   });
 
-  document.getElementById("canvasWrapper").addEventListener("click", () => {
-    mf.focus();
+  const canvasWrapper = document.getElementById("canvasWrapper");
+  if (canvasWrapper) {
+    canvasWrapper.addEventListener("click", () => {
+      if (mf) mf.focus();
+    });
+  }
+
+  // Intercept paste containing Khmer characters to preserve them properly in MathLive
+  window.addEventListener("paste", (e) => {
+    const modal = document.getElementById("modalOverlay");
+    if (modal && !modal.classList.contains("hidden")) {
+      // Allow normal pasting inside open modal dialogs
+      return;
+    }
+    const text = (e.clipboardData || window.clipboardData)?.getData("text");
+    if (text && /[\u1780-\u17FF]/.test(text)) {
+      e.preventDefault();
+      let clean = text.trim();
+      if (!clean.startsWith("\\text{")) {
+        clean = `\\text{${clean}} `;
+      }
+      insertLatex(clean);
+      if (mf) mf.focus();
+      showStatus(currentLang === 'km' ? "✓ បានបិទភ្ជាប់អក្សរខ្មែរ!" : "✓ Pasted Khmer text!", true);
+    }
   });
 }
 
@@ -1432,10 +1455,109 @@ function closeModal() {
  * 1. Khmer Text in Math Mode (\text{...})
  */
 function insertKhmerText() {
-  if (!mf) return;
-  insertLatex("\\text{#?}");
-  mf.focus();
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const footer = document.getElementById("modalFooter");
+  if (!title || !body || !footer) {
+    if (mf) {
+      insertLatex("\\text{#?}");
+      mf.focus();
+    }
+    return;
+  }
+
+  title.innerText = currentLang === 'km' ? "🇰🇭 បញ្ចូលអក្សរខ្មែរក្នុងសមីការ" : "🇰🇭 Insert Khmer Text in Equation";
+
+  const presets = [
+    { label: "ជំហានទី ១៖", val: "ជំហានទី ១៖ " },
+    { label: "ជំហានទី ២៖", val: "ជំហានទី ២៖ " },
+    { label: "សមីការ (១)", val: "សមីការ (១) " },
+    { label: "ប្រតិកម្មគីមី៖", val: "ប្រតិកម្មគីមី៖ " },
+    { label: "ទាញបាន", val: "ទាញបាន " },
+    { label: "ដូចនេះ", val: "ដូចនេះ " },
+    { label: "លក្ខខណ្ឌ៖", val: "លក្ខខណ្ឌ៖ " },
+    { label: "ចំពោះ", val: "ចំពោះ " },
+    { label: "តាង", val: "តាង " },
+    { label: "គេបាន", val: "គេបាន " }
+  ];
+
+  let presetButtonsHtml = presets.map(p => 
+    `<button type="button" class="btn-khmer-preset" onclick="appendKhmerPreset('${p.val}')">${p.label}</button>`
+  ).join("");
+
+  body.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <p style="font-size:13px; color:#64748b; margin:0;">
+        ${currentLang === 'km' 
+          ? 'វាយអក្សរខ្មែរខាងក្រោមដើម្បីបញ្ចូលទៅក្នុងសមីការ ឬចុចលើពាក្យគំរូរហ័ស៖' 
+          : 'Type Khmer text below to insert into the equation, or click quick presets:'}
+      </p>
+
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        ${presetButtonsHtml}
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <label style="font-size:12px; font-weight:600; color:#0f172a;">អត្ថបទខ្មែរ / Khmer Text:</label>
+        <input type="text" id="khmerInputText" class="khmer-text-input" 
+          placeholder="ឧទាហរណ៍៖ ជំហានទី ១, សមីការ (១), ទាញបាន..." 
+          style="width:100%; padding:10px 14px; font-family:'Khmer OS Battambang','Noto Sans Khmer','Khmer OS',sans-serif; font-size:15px; border-radius:6px; border:1px solid #cbd5e1; background:#ffffff; color:#0f172a; box-sizing:border-box; outline:none;"
+          oninput="updateKhmerPreview()"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();confirmInsertKhmerText();}">
+      </div>
+
+      <div style="background:#f8fafc; padding:10px 14px; border-radius:6px; border:1px solid #e2e8f0;">
+        <div style="font-size:11px; color:#64748b; margin-bottom:4px; font-weight:600;">មើលគំរូ LaTeX / Live LaTeX Preview:</div>
+        <div id="khmerPreviewBox" style="font-family:'Khmer OS Battambang','Noto Sans Khmer','Khmer OS',sans-serif; font-size:15px; color:#2563eb; min-height:22px; word-break:break-all;">\\text{...}</div>
+      </div>
+    </div>
+  `;
+
+  footer.innerHTML = `
+    <button class="action-btn secondary-btn" onclick="closeModal()">${currentLang === 'km' ? 'បោះបង់' : 'Cancel'}</button>
+    <button class="action-btn primary-action" onclick="confirmInsertKhmerText()">${currentLang === 'km' ? 'បញ្ចូលក្នុងរូបមន្ត (Insert)' : 'Insert'}</button>
+  `;
+
+  const modal = document.getElementById("modalOverlay");
+  if (modal) modal.classList.remove("hidden");
+  setTimeout(() => {
+    const input = document.getElementById("khmerInputText");
+    if (input) input.focus();
+  }, 100);
 }
+
+function appendKhmerPreset(text) {
+  const input = document.getElementById("khmerInputText");
+  if (!input) return;
+  input.value += text;
+  input.focus();
+  updateKhmerPreview();
+}
+
+function updateKhmerPreview() {
+  const input = document.getElementById("khmerInputText");
+  const preview = document.getElementById("khmerPreviewBox");
+  if (!input || !preview) return;
+  const val = input.value.trim();
+  if (val) {
+    preview.innerText = `\\text{${val}}`;
+  } else {
+    preview.innerText = "\\text{...}";
+  }
+}
+
+function confirmInsertKhmerText() {
+  const input = document.getElementById("khmerInputText");
+  if (!input) return;
+  const val = input.value.trim();
+  closeModal();
+  if (val && mf) {
+    insertLatex(`\\text{${val}} `);
+    mf.focus();
+    showStatus(currentLang === 'km' ? "✓ បានបញ្ចូលអក្សរខ្មែរ!" : "✓ Inserted Khmer text!", true);
+  }
+}
+
 
 /**
  * 2. Equation History & Favorites Management

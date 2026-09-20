@@ -56,47 +56,113 @@ def compile_latex(formula, font_size=12.0):
         else:
             body = f"$ \\displaystyle {trimmed} $"
             
-        preamble_path = os.path.expanduser("~/Library/Application Support/Mathtype-kh/preamble.tex")
-        preamble = "\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage{xcolor}\n\\nopagecolor"
-        if os.path.exists(preamble_path):
-            try:
-                with open(preamble_path, "r", encoding="utf-8") as pf:
-                    content = pf.read().strip()
-                    if content:
-                        preamble = content
-            except Exception:
-                pass
+        has_unicode = any(ord(c) > 127 for c in formula)
+        tex_bin = find_tex_bin()
+        env = os.environ.copy()
+        env["PATH"] = f"{tex_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
 
-        tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
+        if has_unicode:
+            xe_preamble = r"""\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{xcolor}
+\nopagecolor
+\usepackage{fontspec}
+\IfFontExistsTF{Khmer OS Battambang}{
+    \setmainfont{Khmer OS Battambang}
+}{
+    \IfFontExistsTF{Khmer OS}{
+        \setmainfont{Khmer OS}
+    }{
+        \IfFontExistsTF{Noto Sans Khmer}{
+            \setmainfont{Noto Sans Khmer}
+        }{
+            \IfFontExistsTF{Khmer Sangam MN}{
+                \setmainfont{Khmer Sangam MN}
+            }{
+                \setmainfont{Khmer MN}
+            }
+        }
+    }
+}
+"""
+            tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
+{xe_preamble}
+\begin{{document}}
+\fontsize{{{font_size}pt}}{{{font_size * 1.25}pt}}\selectfont
+{body}
+\end{{document}}
+"""
+            with open(tex_path, "w", encoding="utf-8") as f:
+                f.write(tex_code)
+
+            xdv_path = os.path.join(temp_dir, "eq.xdv")
+            pdf_path = os.path.join(temp_dir, "eq.pdf")
+
+            # 1. Run xelatex -no-pdf
+            subprocess.run([os.path.join(tex_bin, "xelatex"), "-no-pdf", "-interaction=nonstopmode", "eq.tex"],
+                           cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if not os.path.exists(xdv_path):
+                return None
+
+            # 2. Run xdvipdfmx
+            subprocess.run([os.path.join(tex_bin, "xdvipdfmx"), "-o", "eq.pdf", "eq.xdv"],
+                           cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # 3. Run dvisvgm to get exact depth
+            subprocess.run([os.path.join(tex_bin, "dvisvgm"), "--no-styles", "--exact-bbox", "eq.xdv", "-o", "eq.svg"],
+                           cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # 4. Render PDF to 300 DPI Transparent PNG
+            app_bin = "/Applications/Mathtype-kh.app/Contents/MacOS/Mathtype-kh"
+            if os.path.exists(app_bin):
+                subprocess.run([app_bin, "--render-pdf", pdf_path, png_path, "300"],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            elif os.path.exists("/opt/homebrew/bin/pdftoppm"):
+                out_base = os.path.join(temp_dir, "eq_ppm")
+                subprocess.run(["/opt/homebrew/bin/pdftoppm", "-png", "-r", "300", pdf_path, out_base],
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                ppm_file = f"{out_base}-1.png"
+                if os.path.exists(ppm_file):
+                    shutil.move(ppm_file, png_path)
+
+            if not os.path.exists(png_path):
+                return None
+        else:
+            preamble_path = os.path.expanduser("~/Library/Application Support/Mathtype-kh/preamble.tex")
+            preamble = "\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage{xcolor}\n\\nopagecolor"
+            if os.path.exists(preamble_path):
+                try:
+                    with open(preamble_path, "r", encoding="utf-8") as pf:
+                        content = pf.read().strip()
+                        if content:
+                            preamble = content
+                except Exception:
+                    pass
+
+            tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
 {preamble}
 \begin{{document}}
 \fontsize{{{font_size}pt}}{{{font_size * 1.25}pt}}\selectfont
 {body}
 \end{{document}}
 """
-        with open(tex_path, "w", encoding="utf-8") as f:
-            f.write(tex_code)
-            
-        tex_bin = find_tex_bin()
-        env = os.environ.copy()
-        env["PATH"] = f"{tex_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
-        
-        # 1. Run latex
-        subprocess.run([os.path.join(tex_bin, "latex"), "-interaction=nonstopmode", "eq.tex"],
-                       cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if not os.path.exists(dvi_path):
-            return None
-            
-        # 2. Run dvipng (300 DPI Transparent)
-        subprocess.run([os.path.join(tex_bin, "dvipng"), "-D", "300", "-T", "tight", "-bg", "Transparent", "-o", "eq.png", "eq.dvi"],
-                       cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if not os.path.exists(png_path):
-            return None
-            
-        # 3. Run dvisvgm to get exact depth
-        width, height, depth, ratio = 0.0, 0.0, 0.0, 0.0
-        subprocess.run([os.path.join(tex_bin, "dvisvgm"), "--no-styles", "--no-fonts", "--exact-bbox", "eq.dvi", "-o", "eq.svg"],
-                       cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            with open(tex_path, "w", encoding="utf-8") as f:
+                f.write(tex_code)
+
+            # 1. Run latex
+            subprocess.run([os.path.join(tex_bin, "latex"), "-interaction=nonstopmode", "eq.tex"],
+                           cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if not os.path.exists(dvi_path):
+                return None
+
+            # 2. Run dvipng (300 DPI Transparent)
+            subprocess.run([os.path.join(tex_bin, "dvipng"), "-D", "300", "-T", "tight", "-bg", "Transparent", "-o", "eq.png", "eq.dvi"],
+                           cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if not os.path.exists(png_path):
+                return None
+
+            # 3. Run dvisvgm to get exact depth
+            subprocess.run([os.path.join(tex_bin, "dvisvgm"), "--no-styles", "--no-fonts", "--exact-bbox", "eq.dvi", "-o", "eq.svg"],
+                           cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if os.path.exists(svg_path):
             with open(svg_path, "r", encoding="utf-8", errors="ignore") as f:
                 svg = f.read()

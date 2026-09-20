@@ -370,6 +370,11 @@ html, body {
   background: transparent;
   user-select: text;
   -webkit-user-select: text;
+  --text-font-family: 'Khmer OS Battambang', 'Noto Sans Khmer', 'Khmer OS', 'Khmer Sangam MN', 'Khmer MN', -apple-system, sans-serif !important;
+}
+
+math-field {
+  --text-font-family: 'Khmer OS Battambang', 'Noto Sans Khmer', 'Khmer OS', 'Khmer Sangam MN', 'Khmer MN', -apple-system, sans-serif !important;
 }
 
 .mathtype-mathfield:focus,
@@ -1040,12 +1045,27 @@ math-field::part(menu-toggle) {
   border-color: #93c5fd !important;
 }
 
-.update-box {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 8px;
-  padding: 14px;
-  margin: 10px 0;
+.btn-khmer-preset {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: 'Khmer OS Battambang', 'Noto Sans Khmer', 'Khmer OS', -apple-system, sans-serif;
+  font-size: 13px;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-khmer-preset:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.btn-khmer-preset:active {
+  background: #cbd5e1;
+  transform: translateY(1px);
 }
 
 

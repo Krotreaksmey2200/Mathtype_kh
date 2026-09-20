@@ -48,6 +48,7 @@
 @property (strong, nonatomic) NSWindow *window;
 @property (strong, nonatomic) WKWebView *webView;
 - (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize;
++ (BOOL)renderPDF:(NSString *)pdfPath toPNG:(NSString *)pngPath dpi:(double)dpi;
 - (void)insertEquationIntoWord:(TeXResult *)texRes latex:(NSString *)latex;
 - (void)handleToggleTeX;
 - (void)toggleTeXMenu:(id)sender;
@@ -322,20 +323,80 @@
     return @"/Library/TeX/texbin";
 }
 
++ (BOOL)renderPDF:(NSString *)pdfPath toPNG:(NSString *)pngPath dpi:(double)dpi {
+    if (![[NSFileManager defaultManager] fileExistsAtPath:pdfPath]) return NO;
+    NSURL *url = [NSURL fileURLWithPath:pdfPath];
+    CGPDFDocumentRef pdf = CGPDFDocumentCreateWithURL((__bridge CFURLRef)url);
+    if (!pdf) return NO;
+    CGPDFPageRef page = CGPDFDocumentGetPage(pdf, 1);
+    if (!page) {
+        CGPDFDocumentRelease(pdf);
+        return NO;
+    }
+    CGRect box = CGPDFPageGetBoxRect(page, kCGPDFCropBox);
+    if (CGRectIsEmpty(box)) box = CGPDFPageGetBoxRect(page, kCGPDFMediaBox);
+    if (CGRectIsEmpty(box)) {
+        CGPDFDocumentRelease(pdf);
+        return NO;
+    }
+    
+    double scale = dpi / 72.0;
+    size_t width = (size_t)ceil(box.size.width * scale);
+    size_t height = (size_t)ceil(box.size.height * scale);
+    if (width == 0 || height == 0) {
+        CGPDFDocumentRelease(pdf);
+        return NO;
+    }
+    
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef ctx = CGBitmapContextCreate(NULL, width, height, 8, width * 4, colorSpace, kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+    if (!ctx) {
+        CGPDFDocumentRelease(pdf);
+        return NO;
+    }
+    
+    CGContextClearRect(ctx, CGRectMake(0, 0, width, height));
+    CGContextScaleCTM(ctx, scale, scale);
+    CGContextTranslateCTM(ctx, -box.origin.x, -box.origin.y);
+    CGContextDrawPDFPage(ctx, page);
+    
+    CGImageRef img = CGBitmapContextCreateImage(ctx);
+    CGContextRelease(ctx);
+    CGPDFDocumentRelease(pdf);
+    if (!img) return NO;
+    
+    NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithCGImage:img];
+    NSData *pngData = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+    CGImageRelease(img);
+    if (!pngData) return NO;
+    return [pngData writeToFile:pngPath atomically:YES];
+}
+
 - (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize {
     TeXResult *result = [[TeXResult alloc] init];
     if (fontSize <= 0) fontSize = 12.0;
 
     NSString *texBin = [self currentTeXBinPath];
     NSString *latexBin = [texBin stringByAppendingPathComponent:@"latex"];
+    NSString *xelatexBin = [texBin stringByAppendingPathComponent:@"xelatex"];
+    NSString *xdvipdfmxBin = [texBin stringByAppendingPathComponent:@"xdvipdfmx"];
     NSString *dvipngBin = [texBin stringByAppendingPathComponent:@"dvipng"];
     NSString *dvisvgmBin = [texBin stringByAppendingPathComponent:@"dvisvgm"];
     NSString *dvipdfmxBin = [texBin stringByAppendingPathComponent:@"dvipdfmx"];
 
-    if (![[NSFileManager defaultManager] fileExistsAtPath:latexBin]) {
-        result.errorMessage = [NSString stringWithFormat:@"LaTeX binary not found in %@", texBin];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:latexBin] && ![[NSFileManager defaultManager] fileExistsAtPath:xelatexBin]) {
+        result.errorMessage = [NSString stringWithFormat:@"LaTeX/XeLaTeX binary not found in %@", texBin];
         std::cerr << "[TeX Engine Error] " << [result.errorMessage UTF8String] << std::endl;
         return result;
+    }
+
+    BOOL hasUnicode = NO;
+    for (NSUInteger i = 0; i < [latex length]; i++) {
+        if ([latex characterAtIndex:i] > 127) {
+            hasUnicode = YES;
+            break;
+        }
     }
 
     // Create a temporary workspace directory
@@ -351,98 +412,171 @@
         bodyContent = [NSString stringWithFormat:@"$ \\displaystyle %@ $", trimmed];
     }
 
-    NSString *preamble = [self currentTeXPreamble];
     double baselineSkip = fontSize * 1.25;
-    NSString *texSource = [NSString stringWithFormat:
-        @"\\documentclass[preview,border=0pt]{standalone}\n"
-        @"%@\n"
-        @"\\begin{document}\n"
-        @"\\fontsize{%.1fpt}{%.1fpt}\\selectfont\n"
-        @"%@\n"
-        @"\\end{document}\n", preamble, fontSize, baselineSkip, bodyContent];
-
-    [texSource writeToFile:texFile atomically:YES encoding:NSUTF8StringEncoding error:nil];
-
-    std::cout << "[TeX Engine] Compiling LaTeX at " << fontSize << "pt (Path: " << [texBin UTF8String] << ")..." << std::endl;
-
     NSDictionary *env = @{
         @"PATH": [NSString stringWithFormat:@"%@:/usr/bin:/bin:/usr/sbin:/sbin", texBin]
     };
 
-    // 1. Run latex to generate equation.dvi
-    NSTask *latexTask = [[NSTask alloc] init];
-    latexTask.environment = env;
-    latexTask.currentDirectoryPath = tempDir;
-    latexTask.launchPath = latexBin;
-    latexTask.arguments = @[@"-interaction=nonstopmode", @"equation.tex"];
-    [latexTask launch];
-    [latexTask waitUntilExit];
-
-    NSString *dviFile = [tempDir stringByAppendingPathComponent:@"equation.dvi"];
-    if (![[NSFileManager defaultManager] fileExistsAtPath:dviFile]) {
-        result.errorMessage = @"LaTeX compilation failed to produce DVI file.";
-        std::cerr << "[TeX Engine Error] " << [result.errorMessage UTF8String] << std::endl;
-        return result;
-    }
-
-    // 2. Run dvipng (300 DPI Transparent Image)
     NSString *pngFile = [tempDir stringByAppendingPathComponent:@"equation.png"];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:dvipngBin]) {
-        NSTask *dvipngTask = [[NSTask alloc] init];
-        dvipngTask.environment = env;
-        dvipngTask.currentDirectoryPath = tempDir;
-        dvipngTask.launchPath = dvipngBin;
-        dvipngTask.arguments = @[@"-D", @"300", @"-T", @"tight", @"-bg", @"Transparent", @"-o", @"equation.png", @"equation.dvi"];
-        [dvipngTask launch];
-        [dvipngTask waitUntilExit];
-    }
-
-    // 3. Run dvisvgm to extract exact baseline depth & dimensions and save SVG
     NSString *svgFile = [tempDir stringByAppendingPathComponent:@"equation.svg"];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:dvisvgmBin]) {
-        NSTask *dvisvgmTask = [[NSTask alloc] init];
-        dvisvgmTask.environment = env;
-        dvisvgmTask.currentDirectoryPath = tempDir;
-        dvisvgmTask.launchPath = dvisvgmBin;
-        dvisvgmTask.arguments = @[@"--no-styles", @"--no-fonts", @"--exact-bbox", @"equation.dvi", @"-o", @"equation.svg"];
-        [dvisvgmTask launch];
-        [dvisvgmTask waitUntilExit];
+    NSString *pdfFile = [tempDir stringByAppendingPathComponent:@"equation.pdf"];
 
-        if ([[NSFileManager defaultManager] fileExistsAtPath:svgFile]) {
-            result.svgPath = svgFile;
-            NSString *svgContent = [NSString stringWithContentsOfFile:svgFile encoding:NSUTF8StringEncoding error:nil];
-            NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"viewBox\\s*=\\s*['\"]\\s*([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)" options:0 error:nil];
-            NSTextCheckingResult *match = [regex firstMatchInString:svgContent options:0 range:NSMakeRange(0, [svgContent length])];
-            if (match && match.numberOfRanges >= 5) {
-                double minY = [[svgContent substringWithRange:[match rangeAtIndex:2]] doubleValue];
-                double w = [[svgContent substringWithRange:[match rangeAtIndex:3]] doubleValue];
-                double h = [[svgContent substringWithRange:[match rangeAtIndex:4]] doubleValue];
-                double depth = minY + h;
-                result.width = w;
-                result.height = h;
-                result.depth = depth;
-                if (h > 0) {
-                    result.ratio = depth / h;
+    BOOL useXeLaTeX = hasUnicode && [[NSFileManager defaultManager] fileExistsAtPath:xelatexBin];
+
+    if (useXeLaTeX) {
+        std::cout << "[TeX Engine] Detected Khmer/Unicode text. Compiling with XeLaTeX at " << fontSize << "pt..." << std::endl;
+        NSString *xePreamble = 
+            @"\\usepackage{amsmath,amssymb,amsfonts}\n"
+            @"\\usepackage[version=4]{mhchem}\n"
+            @"\\usepackage{fontspec}\n"
+            @"\\IfFontExistsTF{Khmer OS Battambang}{\n"
+            @"    \\setmainfont{Khmer OS Battambang}\n"
+            @"}{\n"
+            @"    \\IfFontExistsTF{Khmer OS}{\n"
+            @"        \\setmainfont{Khmer OS}\n"
+            @"    }{\n"
+            @"        \\IfFontExistsTF{Noto Sans Khmer}{\n"
+            @"            \\setmainfont{Noto Sans Khmer}\n"
+            @"        }{\n"
+            @"            \\IfFontExistsTF{Khmer Sangam MN}{\n"
+            @"                \\setmainfont{Khmer Sangam MN}\n"
+            @"            }{\n"
+            @"                \\setmainfont{Khmer MN}\n"
+            @"            }\n"
+            @"        }\n"
+            @"    }\n"
+            @"}\n";
+
+        NSString *texSource = [NSString stringWithFormat:
+            @"\\documentclass[preview,border=0pt]{standalone}\n"
+            @"%@\n"
+            @"\\begin{document}\n"
+            @"\\fontsize{%.1fpt}{%.1fpt}\\selectfont\n"
+            @"%@\n"
+            @"\\end{document}\n", xePreamble, fontSize, baselineSkip, bodyContent];
+
+        [texSource writeToFile:texFile atomically:YES encoding:NSUTF8StringEncoding error:nil];
+
+        // 1. Run xelatex -no-pdf to produce equation.xdv
+        NSTask *xeTask = [[NSTask alloc] init];
+        xeTask.environment = env;
+        xeTask.currentDirectoryPath = tempDir;
+        xeTask.launchPath = xelatexBin;
+        xeTask.arguments = @[@"-no-pdf", @"-interaction=nonstopmode", @"equation.tex"];
+        [xeTask launch];
+        [xeTask waitUntilExit];
+
+        NSString *xdvFile = [tempDir stringByAppendingPathComponent:@"equation.xdv"];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:xdvFile]) {
+            // 2. Convert xdv to pdf using xdvipdfmx
+            if ([[NSFileManager defaultManager] fileExistsAtPath:xdvipdfmxBin]) {
+                NSTask *pdfTask = [[NSTask alloc] init];
+                pdfTask.environment = env;
+                pdfTask.currentDirectoryPath = tempDir;
+                pdfTask.launchPath = xdvipdfmxBin;
+                pdfTask.arguments = @[@"-o", @"equation.pdf", @"equation.xdv"];
+                [pdfTask launch];
+                [pdfTask waitUntilExit];
+            }
+            // 3. Convert xdv to svg using dvisvgm
+            if ([[NSFileManager defaultManager] fileExistsAtPath:dvisvgmBin]) {
+                NSTask *svgTask = [[NSTask alloc] init];
+                svgTask.environment = env;
+                svgTask.currentDirectoryPath = tempDir;
+                svgTask.launchPath = dvisvgmBin;
+                svgTask.arguments = @[@"--no-styles", @"--exact-bbox", @"equation.xdv", @"-o", @"equation.svg"];
+                [svgTask launch];
+                [svgTask waitUntilExit];
+            }
+            // 4. Render pdf to 300 DPI transparent png
+            if ([[NSFileManager defaultManager] fileExistsAtPath:pdfFile]) {
+                result.pdfPath = pdfFile;
+                [AppDelegate renderPDF:pdfFile toPNG:pngFile dpi:300.0];
+            }
+        }
+    } else {
+        // Standard LaTeX (pdftex)
+        NSString *preamble = [self currentTeXPreamble];
+        NSString *texSource = [NSString stringWithFormat:
+            @"\\documentclass[preview,border=0pt]{standalone}\n"
+            @"%@\n"
+            @"\\begin{document}\n"
+            @"\\fontsize{%.1fpt}{%.1fpt}\\selectfont\n"
+            @"%@\n"
+            @"\\end{document}\n", preamble, fontSize, baselineSkip, bodyContent];
+
+        [texSource writeToFile:texFile atomically:YES encoding:NSUTF8StringEncoding error:nil];
+
+        std::cout << "[TeX Engine] Compiling LaTeX at " << fontSize << "pt (Path: " << [texBin UTF8String] << ")..." << std::endl;
+
+        // 1. Run latex to generate equation.dvi
+        NSTask *latexTask = [[NSTask alloc] init];
+        latexTask.environment = env;
+        latexTask.currentDirectoryPath = tempDir;
+        latexTask.launchPath = latexBin;
+        latexTask.arguments = @[@"-interaction=nonstopmode", @"equation.tex"];
+        [latexTask launch];
+        [latexTask waitUntilExit];
+
+        NSString *dviFile = [tempDir stringByAppendingPathComponent:@"equation.dvi"];
+        if ([[NSFileManager defaultManager] fileExistsAtPath:dviFile]) {
+            // 2. Run dvipng (300 DPI Transparent Image)
+            if ([[NSFileManager defaultManager] fileExistsAtPath:dvipngBin]) {
+                NSTask *dvipngTask = [[NSTask alloc] init];
+                dvipngTask.environment = env;
+                dvipngTask.currentDirectoryPath = tempDir;
+                dvipngTask.launchPath = dvipngBin;
+                dvipngTask.arguments = @[@"-D", @"300", @"-T", @"tight", @"-bg", @"Transparent", @"-o", @"equation.png", @"equation.dvi"];
+                [dvipngTask launch];
+                [dvipngTask waitUntilExit];
+            }
+
+            // 3. Run dvisvgm
+            if ([[NSFileManager defaultManager] fileExistsAtPath:dvisvgmBin]) {
+                NSTask *dvisvgmTask = [[NSTask alloc] init];
+                dvisvgmTask.environment = env;
+                dvisvgmTask.currentDirectoryPath = tempDir;
+                dvisvgmTask.launchPath = dvisvgmBin;
+                dvisvgmTask.arguments = @[@"--no-styles", @"--no-fonts", @"--exact-bbox", @"equation.dvi", @"-o", @"equation.svg"];
+                [dvisvgmTask launch];
+                [dvisvgmTask waitUntilExit];
+            }
+
+            // 3b. Run dvipdfmx to generate standalone vector PDF
+            if ([[NSFileManager defaultManager] fileExistsAtPath:dvipdfmxBin]) {
+                NSTask *dvipdfmxTask = [[NSTask alloc] init];
+                dvipdfmxTask.environment = env;
+                dvipdfmxTask.currentDirectoryPath = tempDir;
+                dvipdfmxTask.launchPath = dvipdfmxBin;
+                dvipdfmxTask.arguments = @[@"-o", @"equation.pdf", @"equation.dvi"];
+                [dvipdfmxTask launch];
+                [dvipdfmxTask waitUntilExit];
+
+                if ([[NSFileManager defaultManager] fileExistsAtPath:pdfFile]) {
+                    result.pdfPath = pdfFile;
                 }
-                std::cout << "[TeX Engine] Exact Bounding Box: width=" << w << "pt, height=" << h << "pt, depth=" << depth << "pt, ratio=" << result.ratio << std::endl;
             }
         }
     }
 
-    // 3b. Run dvipdfmx to generate standalone vector PDF
-    NSString *pdfFile = [tempDir stringByAppendingPathComponent:@"equation.pdf"];
-    if ([[NSFileManager defaultManager] fileExistsAtPath:dvipdfmxBin]) {
-        NSTask *dvipdfmxTask = [[NSTask alloc] init];
-        dvipdfmxTask.environment = env;
-        dvipdfmxTask.currentDirectoryPath = tempDir;
-        dvipdfmxTask.launchPath = dvipdfmxBin;
-        dvipdfmxTask.arguments = @[@"-o", @"equation.pdf", @"equation.dvi"];
-        [dvipdfmxTask launch];
-        [dvipdfmxTask waitUntilExit];
-
-        if ([[NSFileManager defaultManager] fileExistsAtPath:pdfFile]) {
-            result.pdfPath = pdfFile;
-            std::cout << "[TeX Engine] Generated vector PDF: " << [pdfFile UTF8String] << std::endl;
+    // Extract SVG bounding box & baseline depth
+    if ([[NSFileManager defaultManager] fileExistsAtPath:svgFile]) {
+        result.svgPath = svgFile;
+        NSString *svgContent = [NSString stringWithContentsOfFile:svgFile encoding:NSUTF8StringEncoding error:nil];
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"viewBox\\s*=\\s*['\"]\\s*([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)\\s+([-\\d.]+)" options:0 error:nil];
+        NSTextCheckingResult *match = [regex firstMatchInString:svgContent options:0 range:NSMakeRange(0, [svgContent length])];
+        if (match && match.numberOfRanges >= 5) {
+            double minY = [[svgContent substringWithRange:[match rangeAtIndex:2]] doubleValue];
+            double w = [[svgContent substringWithRange:[match rangeAtIndex:3]] doubleValue];
+            double h = [[svgContent substringWithRange:[match rangeAtIndex:4]] doubleValue];
+            double depth = minY + h;
+            result.width = w;
+            result.height = h;
+            result.depth = depth;
+            if (h > 0) {
+                result.ratio = depth / h;
+            }
+            std::cout << "[TeX Engine] Exact Bounding Box: width=" << w << "pt, height=" << h << "pt, depth=" << depth << "pt, ratio=" << result.ratio << std::endl;
         }
     }
 
@@ -963,6 +1097,14 @@
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
+        if (argc >= 4 && strcmp(argv[1], "--render-pdf") == 0) {
+            NSString *pdf = [NSString stringWithUTF8String:argv[2]];
+            NSString *png = [NSString stringWithUTF8String:argv[3]];
+            double dpi = (argc >= 5) ? atof(argv[4]) : 300.0;
+            BOOL ok = [AppDelegate renderPDF:pdf toPNG:png dpi:dpi];
+            return ok ? 0 : 1;
+        }
+
         std::cout << "[Mathtype-kh LaTeX Kernel] Launching engine (default font size 12pt)..." << std::endl;
         NSApplication *app = [NSApplication sharedApplication];
         [app setActivationPolicy:NSApplicationActivationPolicyRegular];
