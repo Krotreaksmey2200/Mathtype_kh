@@ -15,22 +15,9 @@ mkdir -p "Mathtype-kh.app/Contents/Resources"
 clang++ -O2 -std=c++17 -arch arm64 -arch x86_64 -framework Cocoa -framework WebKit \
     "src/main.mm" -o "Mathtype-kh.app/Contents/MacOS/Mathtype-kh"
 
-# Ensure Info.plist and icons are present
-if [ -f "MathType.app/Contents/Info.plist" ]; then
-    cp -f "MathType.app/Contents/Info.plist" "Mathtype-kh.app/Contents/Info.plist"
-fi
-if [ -f "MathType.app/Contents/Resources/App_MT_Mac.icns" ]; then
-    cp -f "MathType.app/Contents/Resources/App_MT_Mac.icns" "Mathtype-kh.app/Contents/Resources/App_MT_Mac.icns"
-fi
-
 # 2. Synchronize frontend bundle
 echo "📁 Syncing app assets..."
 rsync -av --delete app/ "Mathtype-kh.app/Contents/Resources/app/"
-
-# Sync to MathType.app for backward compatibility
-mkdir -p "MathType.app/Contents/MacOS"
-cp -f "Mathtype-kh.app/Contents/MacOS/Mathtype-kh" "MathType.app/Contents/MacOS/MathType"
-rsync -av --delete app/ "MathType.app/Contents/Resources/app/"
 
 # 3. Sign application
 echo "✍️ Signing application..."
@@ -63,10 +50,6 @@ pkgbuild --root "word_plugin/pkg_build/root" \
          --identifier "com.mathtype.kh.wordplugin" \
          --version "1.0.0" \
          "word_plugin/Mathtype-kh.pkg"
-
-cp -f "Mathtype-kh.pkg" "MathType-7-Khmer-macOS.pkg"
-cp -f "word_plugin/Mathtype-kh.pkg" "word_plugin/Mathtype_kh.pkg"
-cp -f "word_plugin/Mathtype-kh.pkg" "Mathtype_kh.pkg"
 
 # Clean up staging
 rm -rf packaging/staging "packaging/Mathtype-kh-Component.pkg"
