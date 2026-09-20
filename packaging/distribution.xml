@@ -3,15 +3,21 @@
     <title>Mathtype-kh</title>
     <welcome file="welcome.html" mime-type="text/html"/>
     <pkg-ref id="com.mathtype.kh"/>
+    <pkg-ref id="com.mathtype.kh.wordplugin"/>
     <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
     <choices-outline>
         <line choice="default">
             <line choice="com.mathtype.kh"/>
+            <line choice="com.mathtype.kh.wordplugin"/>
         </line>
     </choices-outline>
     <choice id="default"/>
     <choice id="com.mathtype.kh" visible="false">
         <pkg-ref id="com.mathtype.kh"/>
     </choice>
+    <choice id="com.mathtype.kh.wordplugin" visible="false">
+        <pkg-ref id="com.mathtype.kh.wordplugin"/>
+    </choice>
     <pkg-ref id="com.mathtype.kh" version="7.4.4" onConclusion="none">Mathtype-kh-Component.pkg</pkg-ref>
+    <pkg-ref id="com.mathtype.kh.wordplugin" version="1.0.0" onConclusion="none">Mathtype-kh-WordPlugin.pkg</pkg-ref>
 </installer-gui-script>

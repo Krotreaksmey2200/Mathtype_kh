@@ -1,7 +1,16 @@
 on LaunchApp(paramString)
 	try
 		my ActivateApp()
-		do shell script "curl -s -m 2 -X POST http://127.0.0.1:45678/new-inline || true"
+		set pyScript to "import urllib.request, time
+req = urllib.request.Request('http://127.0.0.1:45678/new-inline', data=b'', headers={'Content-Type': 'application/json'})
+for _ in range(15):
+    try:
+        with urllib.request.urlopen(req, timeout=1) as resp:
+            break
+    except Exception:
+        time.sleep(0.2)
+"
+		do shell script "python3 -c " & quoted form of pyScript & " 2>/dev/null || true"
 		return "Success"
 	on error
 		return "Error: Could not launch app"
@@ -11,20 +20,35 @@ end LaunchApp
 on EditEquation(paramString)
 	try
 		set latexCode to paramString
-		if latexCode is "" or latexCode is missing value then
-			tell application "Microsoft Word"
-				set mySel to selection
-				set selTextObj to text object of mySel
-				if (count of inline shapes of selTextObj) > 0 then
-					set theShape to inline shape 1 of selTextObj
-					set latexCode to alternative text of theShape
+		tell application "Microsoft Word"
+			set mySel to selection
+			set theShape to missing value
+			try
+				if (count of inline shapes of mySel) > 0 then
+					set theShape to inline shape 1 of mySel
+				else
+					set selTextObj to text object of mySel
+					if (count of inline shapes of selTextObj) > 0 then
+						set theShape to inline shape 1 of selTextObj
+					end if
 				end if
-			end tell
-		end if
+			end try
+			
+			if theShape is not missing value then
+				if latexCode is "" or latexCode is missing value then
+					try
+						set latexCode to alternative text of theShape
+					end try
+				end if
+				try
+					select (text object of theShape)
+				end try
+			end if
+		end tell
 		
 		if latexCode is not missing value and latexCode is not "" then
 			my ActivateApp()
-			set pyScript to "import urllib.request, json, sys, urllib.parse
+			set pyScript to "import urllib.request, json, sys, urllib.parse, time
 raw = sys.argv[1]
 if '|latex:' in raw:
     code = raw.split('|latex:')[1]
@@ -41,17 +65,21 @@ if code.startswith('$') and code.endswith('$'):
     code = code[1:-1].strip()
 if code.startswith('$$') and code.endswith('$$'):
     code = code[2:-2].strip()
-if code.startswith(r'\\[') and code.endswith(r'\\]'):
+if code.startswith(r'\\[' ) and code.endswith(r'\\]'):
+    code = code[2:-2].strip()
+if code.startswith(r'\\(') and code.endswith(r'\\)'):
     code = code[2:-2].strip()
 
 data = json.dumps({'latex': code}).encode('utf-8')
 req = urllib.request.Request('http://127.0.0.1:45678/edit', data=data, headers={'Content-Type': 'application/json'})
-try:
-    urllib.request.urlopen(req, timeout=2)
-except Exception:
-    pass
+for _ in range(15):
+    try:
+        with urllib.request.urlopen(req, timeout=1) as resp:
+            break
+    except Exception:
+        time.sleep(0.2)
 "
-			do shell script "python3 -c " & quoted form of pyScript & " " & quoted form of latexCode
+			do shell script "python3 -c " & quoted form of pyScript & " " & quoted form of latexCode & " 2>/dev/null || true"
 			return "Success"
 		end if
 		return "NoEquation"
@@ -67,6 +95,11 @@ on ActivateApp()
 		try
 			do shell script "open -a '/Applications/Mathtype-kh.app' 2>/dev/null || true"
 		end try
+	end try
+	try
+		tell application "System Events"
+			set frontmost of process "Mathtype-kh" to true
+		end tell
 	end try
 end ActivateApp
 

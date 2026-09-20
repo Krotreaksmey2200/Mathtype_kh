@@ -36,23 +36,26 @@ pkgbuild --root "packaging/staging" \
          --version "7.4.4" \
          "packaging/Mathtype-kh-Component.pkg"
 
-# 5. Build distribution product package
-echo "🎁 Building final distribution package..."
+# 5. Build Word Add-in component package for distribution
+echo "📦 Building Word Add-in package component..."
+pkgbuild --root "word_plugin/pkg_build/root" \
+         --scripts "word_plugin/pkg_build/scripts" \
+         --identifier "com.mathtype.kh.wordplugin" \
+         --version "1.0.0" \
+         "packaging/Mathtype-kh-WordPlugin.pkg"
+
+# Also produce standalone Word plugin pkg
+cp -f "packaging/Mathtype-kh-WordPlugin.pkg" "word_plugin/Mathtype-kh.pkg"
+
+# 6. Build distribution product package (All-in-One: App + Word Plugin)
+echo "🎁 Building final distribution package (All-in-One)..."
 productbuild --distribution "packaging/distribution.xml" \
              --package-path "packaging" \
              --resources "packaging" \
              "Mathtype-kh.pkg"
 
-# Also produce Word plugin pkg
-echo "📦 Building Word Add-in package..."
-pkgbuild --root "word_plugin/pkg_build/root" \
-         --scripts "word_plugin/pkg_build/scripts" \
-         --identifier "com.mathtype.kh.wordplugin" \
-         --version "1.0.0" \
-         "word_plugin/Mathtype-kh.pkg"
-
 # Clean up staging
-rm -rf packaging/staging "packaging/Mathtype-kh-Component.pkg"
+rm -rf packaging/staging "packaging/Mathtype-kh-Component.pkg" "packaging/Mathtype-kh-WordPlugin.pkg"
 
 echo "=========================================="
 echo "✅ Packaging Complete!"

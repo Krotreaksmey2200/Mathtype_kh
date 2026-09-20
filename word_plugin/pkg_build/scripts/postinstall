@@ -49,15 +49,19 @@ for user_home in /Users/*; do
     mkdir -p "$USER_APP_SCRIPTS" 2>/dev/null || true
     cp -f "$SOURCE_DIR/$SCPT_NAME" "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     cp -f "$SOURCE_DIR/$SCPT_NAME_KH" "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    cp -f "$SOURCE_DIR/$SCPT_NAME_KH" "$USER_APP_SCRIPTS/Mathtype_kh.scpt" 2>/dev/null || true
     cp -f "$SOURCE_DIR/toggle_tex_worker.py" "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
     chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    chown "$username" "$USER_APP_SCRIPTS/Mathtype_kh.scpt" 2>/dev/null || true
     chown "$username" "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
     chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    chmod 755 "$USER_APP_SCRIPTS/Mathtype_kh.scpt" 2>/dev/null || true
     chmod 755 "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
     xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/Mathtype_kh.scpt" 2>/dev/null || true
     xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
 done
 

@@ -881,15 +881,20 @@ function actionOpenWord() {
   showStatus(currentLang === 'km' ? "✓ កំពុងបើក Microsoft Word..." : "✓ Opening Microsoft Word...", true);
 }
 
+let isInsertingToWord = false;
+
 /**
  * Direct One-Click Insert Into Word (Automates Microsoft Word via AppleScript)
  */
 async function actionInsertIntoWord() {
+  if (isInsertingToWord) return;
+  isInsertingToWord = true;
   try {
     showStatus(currentLang === 'km' ? "⚡ កំពុងដំណើរការ LaTeX Kernel និងបញ្ចូលទៅ Word..." : "⚡ Running LaTeX Kernel & Inserting into Word...", false);
     const latex = mf.getValue("latex");
     if (!latex || latex.trim() === "") {
       showStatus(currentLang === 'km' ? "សូមបញ្ចូលសមីការជាមុនសិន!" : "Please enter an equation first!", true);
+      isInsertingToWord = false;
       return;
     }
 
@@ -912,6 +917,10 @@ async function actionInsertIntoWord() {
     }
   } catch (err) {
     showStatus("កំហុសក្នុងការបញ្ចូល៖ " + err.message);
+  } finally {
+    setTimeout(() => {
+      isInsertingToWord = false;
+    }, 1000);
   }
 }
 
@@ -1082,7 +1091,7 @@ function showAboutModal() {
       <img src="./assets/icons/MT_ICO.png" width="56" height="56" style="margin-bottom: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
       <h2 style="font-size: 18px; margin: 0; color: #111; font-weight: 700;">Mathtype-kh</h2>
       <p style="font-size: 13.5px; color: #107c41; font-weight: 600; margin: 5px 0 0 0;">👨‍💻 អ្នកធ្វើ (Author): K.Reaksmey</p>
-      <p style="font-size: 11.5px; color: #64748b; margin: 4px 0 0 0;">Native 64-bit Edition (Khmer Math Editor)</p>
+      <p style="font-size: 11.5px; color: #64748b; margin: 4px 0 0 0;">Version 7.4.4 (Native 64-bit Khmer Edition)</p>
     </div>
     <p style="font-size: 12.5px; line-height: 1.6; color: #334155; margin: 0 0 10px 0;">
       ${currentLang === 'km' 
@@ -1090,6 +1099,7 @@ function showAboutModal() {
         : "<b>Mathtype-kh</b> is developed by <b>K.Reaksmey</b> for fast and intuitive mathematical equation editing with automated 1-click Microsoft Word integration and baseline alignment."}
     </p>
     <ul style="margin: 10px 0 12px 20px; font-size: 12px; color: #475569; line-height: 1.8;">
+      <li><b>កំណែប្រែ (Version)៖</b> <span style="color: #2563eb; font-weight: 600;">v7.4.4</span></li>
       <li><b>អ្នកធ្វើ (Author / Creator)៖</b> <span style="color: #107c41; font-weight: 600;">K.Reaksmey</span></li>
       <li><b>ភាសាសរសេរ (Core):</b> C++ & Objective-C (Apple Cocoa / AppKit)</li>
       <li><b>ប្រព័ន្ធគណនា (Engine):</b> High-Resolution TeX Engine (300 DPI)</li>
