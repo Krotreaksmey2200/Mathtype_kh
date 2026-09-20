@@ -1074,23 +1074,32 @@ function showAboutModal() {
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
   if (footer) {
-    footer.innerHTML = '<button class="action-btn primary-action" onclick="closeModal()">OK</button>';
+    footer.innerHTML = '<button class="action-btn insert-word-action" style="padding: 0 20px;" onclick="closeModal()">OK</button>';
   }
-  title.innerText = "About Mathtype-kh";
+  title.innerText = currentLang === 'km' ? "អំពី Mathtype-kh" : "About Mathtype-kh";
   body.innerHTML = `
     <div style="text-align: center; margin-bottom: 16px;">
-      <img src="./assets/icons/MT_ICO.png" width="48" height="48" style="margin-bottom: 8px;">
-      <h2 style="font-size: 16px; margin: 0; color: #111;">Mathtype-kh</h2>
-      <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">64-bit Native C++ / Objective-C Edition (Khmer Math Editor)</p>
+      <img src="./assets/icons/MT_ICO.png" width="56" height="56" style="margin-bottom: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
+      <h2 style="font-size: 18px; margin: 0; color: #111; font-weight: 700;">Mathtype-kh</h2>
+      <p style="font-size: 13.5px; color: #107c41; font-weight: 600; margin: 5px 0 0 0;">👨‍💻 អ្នកធ្វើ (Author): K.Reaksmey</p>
+      <p style="font-size: 11.5px; color: #64748b; margin: 4px 0 0 0;">Native 64-bit Edition (Khmer Math Editor)</p>
     </div>
-    <p>Mathtype-kh Desktop Edition re-engineered for 64-bit macOS systems with deep Microsoft Word AppleScript integration and baseline alignment from Khmer Math Editor.</p>
-    <ul style="margin: 12px 0 12px 20px; font-size: 12.5px; color: #444;">
-      <li><b>Language:</b> C++ & Objective-C (Apple Cocoa / AppKit)</li>
-      <li><b>Default Font Size:</b> 12 pt (Microsoft Word Standard)</li>
-      <li><b>Direct Word Insertion:</b> 1-Click Auto Insert into Word</li>
-      <li><b>Baseline Alignment:</b> Automatic depth ratio compensation in Word</li>
-      <li><b>Localization:</b> ភាសាខ្មែរ 🇰🇭 & English 🇺🇸</li>
+    <p style="font-size: 12.5px; line-height: 1.6; color: #334155; margin: 0 0 10px 0;">
+      ${currentLang === 'km' 
+        ? "កម្មវិធី <b>Mathtype-kh</b> ត្រូវបានបង្កើត និងអភិវឌ្ឍដោយ <b>K.Reaksmey</b> សម្រាប់សម្រួលដល់ការសរសេរសមីការគណិតវិទ្យា វិទ្យាសាស្ត្រ និងការបញ្ចូលរូបមន្តទៅក្នុង Microsoft Word ដោយស្វ័យប្រវត្តិតាមរយៈប្រព័ន្ធកូដកម្រិតខ្ពស់ និងតម្រឹមបន្ទាត់យ៉ាងស្រស់ស្អាត។" 
+        : "<b>Mathtype-kh</b> is developed by <b>K.Reaksmey</b> for fast and intuitive mathematical equation editing with automated 1-click Microsoft Word integration and baseline alignment."}
+    </p>
+    <ul style="margin: 10px 0 12px 20px; font-size: 12px; color: #475569; line-height: 1.8;">
+      <li><b>អ្នកធ្វើ (Author / Creator)៖</b> <span style="color: #107c41; font-weight: 600;">K.Reaksmey</span></li>
+      <li><b>ភាសាសរសេរ (Core):</b> C++ & Objective-C (Apple Cocoa / AppKit)</li>
+      <li><b>ប្រព័ន្ធគណនា (Engine):</b> High-Resolution TeX Engine (300 DPI)</li>
+      <li><b>ការបញ្ចូល Word:</b> 1-Click Auto Insert into Word (⌘I / Enter)</li>
+      <li><b>តម្រឹមបន្ទាត់ (Baseline Alignment):</b> ស្វ័យប្រវត្តិ (Depth Ratio)</li>
+      <li><b>ភាសាគាំទ្រ (Languages):</b> ភាសាខ្មែរ 🇰🇭 & English 🇺🇸</li>
     </ul>
+    <div style="text-align: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
+      © 2026 Mathtype-kh • Created by K.Reaksmey
+    </div>
   `;
   document.getElementById("modalOverlay").classList.remove("hidden");
 }

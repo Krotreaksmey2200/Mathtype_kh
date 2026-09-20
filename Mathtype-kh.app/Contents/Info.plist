@@ -26,5 +26,7 @@
     <string>11.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 K.Reaksmey. All rights reserved.</string>
 </dict>
 </plist>
