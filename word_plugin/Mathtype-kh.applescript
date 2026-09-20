@@ -3,14 +3,14 @@ on LaunchApp(paramString)
 		my ActivateApp()
 		set pyScript to "import urllib.request, time
 req = urllib.request.Request('http://127.0.0.1:45678/new-inline', data=b'', headers={'Content-Type': 'application/json'})
-for _ in range(15):
+for _ in range(25):
     try:
         with urllib.request.urlopen(req, timeout=1) as resp:
             break
     except Exception:
         time.sleep(0.2)
 "
-		do shell script "python3 -c " & quoted form of pyScript & " 2>/dev/null || true"
+		do shell script "/usr/bin/python3 -c " & quoted form of pyScript & " 2>/dev/null || true"
 		return "Success"
 	on error
 		return "Error: Could not launch app"
@@ -20,34 +20,28 @@ end LaunchApp
 on EditEquation(paramString)
 	try
 		set latexCode to paramString
-		tell application "Microsoft Word"
-			set mySel to selection
-			set theShape to missing value
+		if latexCode is missing value or latexCode is "" then
 			try
-				if (count of inline shapes of mySel) > 0 then
-					set theShape to inline shape 1 of mySel
-				else
-					set selTextObj to text object of mySel
-					if (count of inline shapes of selTextObj) > 0 then
-						set theShape to inline shape 1 of selTextObj
+				tell application "Microsoft Word"
+					set mySel to selection
+					set theShape to missing value
+					if (count of inline shapes of mySel) > 0 then
+						set theShape to inline shape 1 of mySel
+					else
+						set selTextObj to text object of mySel
+						if (count of inline shapes of selTextObj) > 0 then
+							set theShape to inline shape 1 of selTextObj
+						end if
 					end if
-				end if
-			end try
-			
-			if theShape is not missing value then
-				if latexCode is "" or latexCode is missing value then
-					try
+					if theShape is not missing value then
 						set latexCode to alternative text of theShape
-					end try
-				end if
-				try
-					select (text object of theShape)
-				end try
-			end if
-		end tell
+					end if
+				end tell
+			end try
+		end if
 		
+		my ActivateApp()
 		if latexCode is not missing value and latexCode is not "" then
-			my ActivateApp()
 			set pyScript to "import urllib.request, json, sys, urllib.parse, time
 raw = sys.argv[1]
 if '|latex:' in raw:
@@ -72,17 +66,17 @@ if code.startswith(r'\\(') and code.endswith(r'\\)'):
 
 data = json.dumps({'latex': code}).encode('utf-8')
 req = urllib.request.Request('http://127.0.0.1:45678/edit', data=data, headers={'Content-Type': 'application/json'})
-for _ in range(15):
+for _ in range(25):
     try:
         with urllib.request.urlopen(req, timeout=1) as resp:
             break
     except Exception:
         time.sleep(0.2)
 "
-			do shell script "python3 -c " & quoted form of pyScript & " " & quoted form of latexCode & " 2>/dev/null || true"
+			do shell script "/usr/bin/python3 -c " & quoted form of pyScript & " " & quoted form of latexCode & " 2>/dev/null || true"
 			return "Success"
 		end if
-		return "NoEquation"
+		return "Opened"
 	on error errMsg
 		return "Error: " & errMsg
 	end try
@@ -90,16 +84,10 @@ end EditEquation
 
 on ActivateApp()
 	try
-		tell application "Mathtype-kh" to activate
-	on error
-		try
-			do shell script "open -a '/Applications/Mathtype-kh.app' 2>/dev/null || true"
-		end try
+		do shell script "open -b com.mathtype.kh 2>/dev/null || open -a '/Applications/Mathtype-kh.app' 2>/dev/null || open -a 'Mathtype-kh' 2>/dev/null || true"
 	end try
 	try
-		tell application "System Events"
-			set frontmost of process "Mathtype-kh" to true
-		end tell
+		tell application "Mathtype-kh" to activate
 	end try
 end ActivateApp
 
@@ -108,7 +96,7 @@ on ToggleApp(paramString)
 		set homeDir to POSIX path of (path to home folder)
 		set userWorker to homeDir & "Library/Application Scripts/com.microsoft.Word/toggle_tex_worker.py"
 		set sysWorker to "/Library/Application Support/Mathtype-kh/toggle_tex_worker.py"
-		set pyCmd to "python3 " & quoted form of userWorker & " 2>/dev/null || python3 " & quoted form of sysWorker & " 2>/dev/null || true"
+		set pyCmd to "/usr/bin/python3 " & quoted form of userWorker & " 2>/dev/null || /usr/bin/python3 " & quoted form of sysWorker & " 2>/dev/null || python3 " & quoted form of userWorker & " 2>/dev/null || python3 " & quoted form of sysWorker & " 2>/dev/null || true"
 		do shell script pyCmd
 		return "Success"
 	on error errMsg
@@ -120,7 +108,7 @@ on AlignSingleShape(pic)
 	tell application "Microsoft Word"
 		try
 			set altText to alternative text of pic
-			if altText contains "ratio:" or altText contains "latex:" then
+			if altText contains "ratio:" or altText contains "latex:" or altText contains "$" then
 				set rVal to 0.22
 				if altText contains "ratio:" then
 					set AppleScript's text item delimiters to "ratio:"
@@ -135,14 +123,16 @@ on AlignSingleShape(pic)
 					end try
 				end if
 				
-				-- Smart upgrade for equations created when ratio defaulted to 0.22
+				-- Smart upgrade for equations created when ratio defaulted to 0.22 or missing
 				if rVal <= 0.23 then
 					if altText contains "cases" or altText contains "matrix" or altText contains "aligned" or altText contains "\\\\" then
 						set rVal to 0.4185
 					else if altText contains "int" then
 						set rVal to 0.39
 					else if altText contains "frac" then
-						set rVal to 0.30
+						set rVal to 0.3
+					else if rVal <= 0.0 then
+						set rVal to 0.22
 					end if
 				end if
 				
@@ -165,8 +155,8 @@ on AlignSelection(paramString)
 			set sPos to start of content of (text object of selObj)
 			set ePos to end of content of (text object of selObj)
 			if sPos is equal to ePos then
-				set sPos to sPos - 1
-				set ePos to ePos + 1
+				set sPos to sPos - 2
+				set ePos to ePos + 2
 			end if
 			
 			set allShapes to inline shapes of active document
@@ -206,4 +196,3 @@ on AlignDocument(paramString)
 		return "Error: " & errMsg
 	end try
 end AlignDocument
-

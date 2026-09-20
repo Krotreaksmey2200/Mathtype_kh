@@ -121,9 +121,9 @@ def compile_latex(formula, font_size=12.0):
 """
             is_display = trimmed.startswith(r"\begin{align") or trimmed.startswith(r"\begin{equation") or trimmed.startswith(r"\[")
             if is_display:
-                measure_code = rf"\setbox0=\vbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unvbox0"
+                measure_code = f"\\setbox0=\\vbox{{{body}}}%\n\\typeout{{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}}%\n\\unvbox0"
             else:
-                measure_code = rf"\setbox0=\hbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unhbox0"
+                measure_code = f"\\setbox0=\\hbox{{{body}}}%\n\\typeout{{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}}%\n\\unhbox0"
 
             tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
 {xe_preamble}
@@ -179,11 +179,23 @@ def compile_latex(formula, font_size=12.0):
                 except Exception:
                     pass
 
+            # Filter out fontspec and XeTeX font commands so pdflatex never fails
+            if "fontspec" in preamble or "\\setmainfont" in preamble or "\\IfFontExistsTF" in preamble:
+                clean_lines = []
+                for line in preamble.splitlines():
+                    tl = line.strip()
+                    if "fontspec" in tl or "\\setmainfont" in tl or "\\IfFontExistsTF" in tl or "Khmer" in tl:
+                        continue
+                    if tl in ("{", "}", "}{", "}}{", "}}"):
+                        continue
+                    clean_lines.append(line)
+                preamble = "\n".join(clean_lines)
+
             is_display = trimmed.startswith(r"\begin{align") or trimmed.startswith(r"\begin{equation") or trimmed.startswith(r"\[")
             if is_display:
-                measure_code = rf"\setbox0=\vbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unvbox0"
+                measure_code = f"\\setbox0=\\vbox{{{body}}}%\n\\typeout{{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}}%\n\\unvbox0"
             else:
-                measure_code = rf"\setbox0=\hbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unhbox0"
+                measure_code = f"\\setbox0=\\hbox{{{body}}}%\n\\typeout{{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}}%\n\\unhbox0"
 
             tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
 {preamble}
@@ -324,12 +336,47 @@ def main():
     for m in pattern.finditer(sel_text):
         matches.append((m.start(), m.end(), m.group(0)))
         
-    # If no formulas found in text, check if any equation shapes are inside selection bounds in document
+    # If no formulas found in selected text and selection is collapsed (or single char), check current paragraph
+    if not matches and len(sel_text.strip()) <= 1:
+        get_para_scpt = """
+        tell application "Microsoft Word"
+            try
+                set sel to selection
+                set p to paragraph 1 of (text object of sel)
+                set pStart to start of content of (text object of p)
+                set pText to content of text object of p
+                return (pStart as text) & "|||" & pText
+            on error
+                return "ERR"
+            end try
+        end tell
+        """
+        p_out, _ = run_apple_script(get_para_scpt)
+        if "|||" in p_out:
+            p_start_str, p_text = p_out.split("|||", 1)
+            p_start = int(p_start_str)
+            p_matches = []
+            for m in pattern.finditer(p_text):
+                m_start = p_start + m.start()
+                m_end = p_start + m.end()
+                if (m_start - 2) <= sel_start <= (m_end + 2):
+                    p_matches.append((m.start(), m.end(), m.group(0)))
+            if not p_matches:
+                all_p = list(pattern.finditer(p_text))
+                if len(all_p) == 1:
+                    m = all_p[0]
+                    p_matches.append((m.start(), m.end(), m.group(0)))
+            if p_matches:
+                sel_start = p_start
+                sel_text = p_text
+                matches = p_matches
+
+    # If still no formulas found in text, check if any equation shapes are inside or adjacent to selection
     if not matches:
         check_doc_pics = f"""
         tell application "Microsoft Word"
-            set sStart to {sel_start}
-            set sEnd to {sel_start + len(sel_text)}
+            set sStart to {max(0, sel_start - 2)}
+            set sEnd to {sel_start + len(sel_text) + 2}
             set c to count of inline shapes of active document
             set conv to 0
             repeat with i from c to 1 by -1
