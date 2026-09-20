@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Remove Mathtype-kh</title>
+    <welcome file="welcome.html" mime-type="text/html"/>
+    <pkg-ref id="com.mathtype.kh.uninstaller"/>
+    <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+    <choices-outline>
+        <line choice="default">
+            <line choice="com.mathtype.kh.uninstaller"/>
+        </line>
+    </choices-outline>
+    <choice id="default"/>
+    <choice id="com.mathtype.kh.uninstaller" visible="false">
+        <pkg-ref id="com.mathtype.kh.uninstaller"/>
+    </choice>
+    <pkg-ref id="com.mathtype.kh.uninstaller" version="1.0.0" onConclusion="none">Remove-Mathtype-kh-Component.pkg</pkg-ref>
+</installer-gui-script>

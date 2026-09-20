@@ -54,11 +54,26 @@ productbuild --distribution "packaging/distribution.xml" \
              --resources "packaging" \
              "Mathtype-kh.pkg"
 
+# 7. Build Uninstaller package (Remove_mathtype_kh.pkg)
+echo "🗑️ Building Uninstaller package..."
+mkdir -p packaging/uninstaller/root
+pkgbuild --root "packaging/uninstaller/root" \
+         --scripts "packaging/uninstaller/scripts" \
+         --identifier "com.mathtype.kh.uninstaller" \
+         --version "1.0.0" \
+         "packaging/uninstaller/Remove-Mathtype-kh-Component.pkg"
+
+productbuild --distribution "packaging/uninstaller/distribution.xml" \
+             --package-path "packaging/uninstaller" \
+             --resources "packaging/uninstaller" \
+             "Remove_mathtype_kh.pkg"
+
 # Clean up staging
-rm -rf packaging/staging "packaging/Mathtype-kh-Component.pkg" "packaging/Mathtype-kh-WordPlugin.pkg"
+rm -rf packaging/staging "packaging/Mathtype-kh-Component.pkg" "packaging/Mathtype-kh-WordPlugin.pkg" "packaging/uninstaller/Remove-Mathtype-kh-Component.pkg"
 
 echo "=========================================="
 echo "✅ Packaging Complete!"
 echo "   Output Application Installer: Mathtype-kh.pkg"
 echo "   Output Word Plugin Installer: word_plugin/Mathtype-kh.pkg"
+echo "   Output Uninstaller Package:   Remove_mathtype_kh.pkg"
 echo "=========================================="

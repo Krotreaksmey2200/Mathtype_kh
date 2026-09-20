@@ -65,6 +65,7 @@ def main():
 ### 📦 ឯកសារដំឡើង (Download Installers):
 - **`Mathtype-kh-{tag_name}.pkg`** (All-in-One Installer): កញ្ចប់ដំឡើងរួម ដំឡើងទាំង Mathtype-kh.app និង Word Plugin (ណែនាំ / Recommended)
 - **`Mathtype-kh-WordPlugin-{tag_name}.pkg`** (Word Plugin Standalone): សម្រាប់ដំឡើងតែ Add-in លើ Microsoft Word
+- **`Remove_mathtype_kh.pkg`** (Uninstaller): សម្រាប់លុប និងសម្អាត Mathtype-kh ទាំងអស់ចេញពីម៉ាស៊ីន
 """
 
     if existing:
@@ -94,7 +95,8 @@ def main():
 
     assets = [
         ('Mathtype-kh.pkg', f'Mathtype-kh-{tag_name}.pkg', f'Mathtype-kh {tag_name} (All-in-One Installer)'),
-        ('word_plugin/Mathtype-kh.pkg', f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Word Plugin Installer {tag_name} (Standalone)')
+        ('word_plugin/Mathtype-kh.pkg', f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Word Plugin Installer {tag_name} (Standalone)'),
+        ('Remove_mathtype_kh.pkg', 'Remove_mathtype_kh.pkg', 'Uninstaller: Completely Remove & Clean Mathtype-kh')
     ]
 
     existing_assets = {a['name']: a['id'] for a in release.get('assets', [])}

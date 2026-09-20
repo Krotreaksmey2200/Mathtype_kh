@@ -5,7 +5,8 @@
 ### 📥 កញ្ចប់ដំឡើងតាម Version Release (Download Installers):
 👉 **[ទាញយក Mathtype-kh-v7.4.4.pkg (All-in-One Installer)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-v7.4.4.pkg)** *(ណែនាំ: ដំឡើងទាំង Mathtype-kh.app និង Word Plugin ក្នុងពេលតែមួយ)*  
 👉 **[ទាញយក Mathtype-kh-WordPlugin-v7.4.4.pkg (Word Plugin Standalone)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-WordPlugin-v7.4.4.pkg)** *(សម្រាប់អ្នកដែលចង់ដំឡើងតែ Plugin លើ Word)*  
-*(ចុច Double-Click លើឯកសារ `.pkg` នេះ ដើម្បីដំឡើងលើកុំព្យូទ័រ Mac បានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
+👉 **[ទាញយក Remove_mathtype_kh.pkg (Uninstaller Package)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Remove_mathtype_kh.pkg)** *(សម្រាប់លុប និងសម្អាត Mathtype-kh ទាំងអស់ចេញពីម៉ាស៊ីន)*  
+*(ចុច Double-Click លើឯកសារ `.pkg` ទាំងនេះ ដើម្បីដំណើរការលើកុំព្យូទ័រ Mac បានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
 
 ---
 

@@ -1,0 +1,79 @@
+#!/bin/bash
+set -e
+
+echo "===================================================="
+echo "    Uninstalling & Cleaning Mathtype-kh Completely   "
+echo "===================================================="
+
+# 1. Terminate any running processes
+pkill -9 -f "Mathtype-kh" 2>/dev/null || true
+pkill -9 -f "mactex-math-editor" 2>/dev/null || true
+pkill -9 -f "toggle_tex_worker.py" 2>/dev/null || true
+
+# 2. Remove Application bundles
+rm -rf "/Applications/Mathtype-kh.app" 2>/dev/null || true
+rm -rf "/Applications/mactex-math-editor.app" 2>/dev/null || true
+
+# 3. Remove System-wide Support
+rm -rf "/Library/Application Support/Mathtype-kh" 2>/dev/null || true
+rm -rf "/Library/Application Support/Mathtype_kh" 2>/dev/null || true
+
+# 4. Remove System-wide Word Startup templates
+SYS_WORD_STARTUP="/Library/Application Support/Microsoft/Office365/User Content.localized/Startup.localized/Word"
+if [ -d "$SYS_WORD_STARTUP" ]; then
+    rm -f "$SYS_WORD_STARTUP/Mathtype-kh.dotm" 2>/dev/null || true
+    rm -f "$SYS_WORD_STARTUP/Mathtype_kh.dotm" 2>/dev/null || true
+    rm -f "$SYS_WORD_STARTUP/MacTeXMathEditorPlugin.dotm" 2>/dev/null || true
+fi
+
+# 5. Remove for all user directories on this Mac
+for user_home in /Users/*; do
+    if [ ! -d "$user_home" ] || [ "$(basename "$user_home")" = "Shared" ] || [ "$(basename "$user_home")" = "Guest" ]; then
+        continue
+    fi
+
+    # Application Support
+    rm -rf "$user_home/Library/Application Support/Mathtype-kh" 2>/dev/null || true
+    rm -rf "$user_home/Library/Application Support/Mathtype_kh" 2>/dev/null || true
+
+    # Word Startup dotm templates
+    USER_WORD_STARTUP="$user_home/Library/Group Containers/UBF8T346G9.Office/User Content.localized/Startup.localized/Word"
+    if [ -d "$USER_WORD_STARTUP" ]; then
+        rm -f "$USER_WORD_STARTUP/Mathtype-kh.dotm" 2>/dev/null || true
+        rm -f "$USER_WORD_STARTUP/Mathtype_kh.dotm" 2>/dev/null || true
+        rm -f "$USER_WORD_STARTUP/MacTeXMathEditorPlugin.dotm" 2>/dev/null || true
+    fi
+
+    # Word AppleScript sandboxed scripts
+    USER_APP_SCRIPTS="$user_home/Library/Application Scripts/com.microsoft.Word"
+    if [ -d "$USER_APP_SCRIPTS" ]; then
+        rm -f "$USER_APP_SCRIPTS/Mathtype-kh.scpt" 2>/dev/null || true
+        rm -f "$USER_APP_SCRIPTS/Mathtype_kh.scpt" 2>/dev/null || true
+        rm -f "$USER_APP_SCRIPTS/MacTeXMathEditor.scpt" 2>/dev/null || true
+        rm -f "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
+    fi
+
+    # Preferences & Caches
+    rm -f "$user_home/Library/Preferences/com.mathtype.kh.plist" 2>/dev/null || true
+    rm -f "$user_home/Library/Preferences/com.heng.mactex-math-editor.plist" 2>/dev/null || true
+    rm -rf "$user_home/Library/Caches/com.mathtype.kh" 2>/dev/null || true
+    rm -rf "$user_home/Library/Saved Application State/com.mathtype.kh.savedState" 2>/dev/null || true
+    rm -rf "$user_home/Library/Saved Application State/com.heng.mactex-math-editor.savedState" 2>/dev/null || true
+
+    # Temp equation cache in Word container
+    WORD_CONTAINER_TMP="$user_home/Library/Containers/com.microsoft.Word/Data/tmp"
+    if [ -d "$WORD_CONTAINER_TMP" ]; then
+        rm -f "$WORD_CONTAINER_TMP"/mathtype_* 2>/dev/null || true
+        rm -f "$WORD_CONTAINER_TMP"/mactex_* 2>/dev/null || true
+    fi
+done
+
+# 6. Forget package installation receipts
+pkgutil --forget "com.mathtype.kh" 2>/dev/null || true
+pkgutil --forget "com.mathtype.kh.wordplugin" 2>/dev/null || true
+pkgutil --forget "com.mathtype.kh.uninstaller" 2>/dev/null || true
+pkgutil --forget "com.heng.mactex-math-editor" 2>/dev/null || true
+pkgutil --forget "com.mactex.matheditor.plugin" 2>/dev/null || true
+
+echo "✅ Mathtype-kh has been completely removed and cleaned up."
+exit 0
