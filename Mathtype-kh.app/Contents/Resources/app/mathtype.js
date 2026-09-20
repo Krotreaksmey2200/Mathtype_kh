@@ -522,6 +522,47 @@ function createPaletteButton(pal, type) {
   return btn;
 }
 
+function cleanLatexForKaTeX(latex) {
+  if (!latex) return "";
+  let s = latex.trim();
+
+  // Accents with selection placeholder #@ or missing base:
+  // e.g. \hat{#@}, \bar{#@}, \vec{#@}, \dot{#@}, \ddot{#@}, \tilde{#@} -> \hat{\square}
+  s = s.replace(/\\(hat|bar|vec|dot|ddot|tilde|acute|grave|check|breve)\{#@\}/g, "\\$1{\\square}");
+  s = s.replace(/\\(hat|bar|vec|dot|ddot|tilde|acute|grave|check|breve)\{\s*\}/g, "\\$1{\\square}");
+
+  // Standalone superscripts / subscripts without a base:
+  // e.g. ^{#?}, _{#?}, _{#0}^{#?}, ^{\prime}, ^{\prime\prime}, ^{*}
+  if (/^\s*[_^]/.test(s)) {
+    s = "\\square" + s;
+  }
+
+  // Replace all MathLive placeholder tokens (#?, #@, #0, #1, #2, #3, etc.) with \square
+  s = s.replace(/#[\?@\d]/g, "\\square");
+
+  return s;
+}
+
+function renderMathPreview(latex, fallbackLabel) {
+  if (!window.katex || !latex) {
+    return fallbackLabel;
+  }
+  try {
+    const clean = cleanLatexForKaTeX(latex);
+    const rendered = katex.renderToString(clean, {
+      displayMode: false,
+      throwOnError: false
+    });
+    // Critical safeguard: Never display raw red LaTeX error code to the user
+    if (rendered.includes("katex-error")) {
+      return fallbackLabel;
+    }
+    return rendered;
+  } catch (e) {
+    return fallbackLabel;
+  }
+}
+
 function togglePalettePopup(btn, pal) {
   const popup = document.getElementById("palettePopup");
   const grid = document.getElementById("popupGrid");
@@ -534,25 +575,28 @@ function togglePalettePopup(btn, pal) {
   currentActivePalette = pal.id;
   grid.innerHTML = "";
 
+  // Dynamic responsive columns based on item count for clean aesthetic layout
+  let cols = 6;
+  if (pal.items.length <= 4) {
+    cols = pal.items.length;
+  } else if (pal.items.length <= 6) {
+    cols = 3;
+  } else if (pal.items.length <= 9) {
+    cols = 3;
+  } else if (pal.items.length <= 12) {
+    cols = 6;
+  } else {
+    cols = 8;
+  }
+  grid.style.gridTemplateColumns = `repeat(${cols}, auto)`;
+
   pal.items.forEach(item => {
     const div = document.createElement("div");
     div.className = "popup-item";
     div.title = item.desc;
 
     const span = document.createElement("span");
-    if (window.katex && item.latex) {
-      try {
-        const previewLatex = item.latex.replace(/#\?/g, "\\square");
-        span.innerHTML = katex.renderToString(previewLatex, {
-          displayMode: false,
-          throwOnError: false
-        });
-      } catch (e) {
-        span.innerText = item.label;
-      }
-    } else {
-      span.innerText = item.label;
-    }
+    span.innerHTML = renderMathPreview(item.latex, item.label);
     div.appendChild(span);
 
     div.addEventListener("click", (e) => {
@@ -568,12 +612,17 @@ function togglePalettePopup(btn, pal) {
     grid.appendChild(div);
   });
 
-  const rect = btn.getBoundingClientRect();
-  popup.style.top = `${rect.bottom + window.scrollY + 2}px`;
-  popup.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 220)}px`;
-
   popup.classList.remove("hidden");
   btn.classList.add("active");
+
+  const rect = btn.getBoundingClientRect();
+  const popupWidth = popup.offsetWidth || 180;
+  let left = rect.left + window.scrollX;
+  if (left + popupWidth > window.innerWidth - 10) {
+    left = Math.max(10, window.innerWidth - popupWidth - 10);
+  }
+  popup.style.top = `${rect.bottom + window.scrollY + 2}px`;
+  popup.style.left = `${left}px`;
 }
 
 function closePopup() {
@@ -594,18 +643,7 @@ function switchTab(category) {
     btn.title = item.desc;
 
     // Render as real mathematical equation using KaTeX
-    if (window.katex && item.latex) {
-      try {
-        btn.innerHTML = katex.renderToString(item.latex, {
-          displayMode: false,
-          throwOnError: false
-        });
-      } catch (e) {
-        btn.innerText = item.label;
-      }
-    } else {
-      btn.innerText = item.label;
-    }
+    btn.innerHTML = renderMathPreview(item.latex, item.label);
 
     btn.addEventListener("click", () => {
       insertLatex(item.latex);
@@ -673,6 +711,11 @@ function setEquationSize(size) {
 
 function toggleAutoWord(checked) {
   isAutoWord = checked;
+  const pill = document.querySelector(".auto-word-pill");
+  if (pill) {
+    if (checked) pill.classList.add("active");
+    else pill.classList.remove("active");
+  }
   showStatus(isAutoWord ? 
     (currentLang === 'km' ? "✓ បើក Auto Word (ចុច Enter លោតចូល Word ភ្លាម)" : "✓ Auto Word Enabled (Press Enter to insert)") : 
     (currentLang === 'km' ? "បានបិទ Auto Word" : "Auto Word Disabled"), true);
@@ -1010,11 +1053,15 @@ function setFontSize(sizeName) {
 
 function showStatus(msg, isSuccess = false) {
   const el = document.getElementById("statusMessage");
+  const dot = document.querySelector(".status-dot");
+  if (!el) return;
   el.innerText = msg;
   if (isSuccess) {
     el.classList.add("success");
+    if (dot) dot.classList.add("pulse");
     setTimeout(() => {
       el.classList.remove("success");
+      if (dot) dot.classList.remove("pulse");
       el.innerText = i18n[currentLang].statusReady;
     }, 4500);
   }
