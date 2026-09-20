@@ -1,124 +1,136 @@
 # Mathtype-kh 🇰🇭
 
-> **Native 64-bit Mathtype-kh Desktop Application for macOS** with high-resolution **LaTeX Kernel Engine (300 DPI)** and deep **Microsoft Word Automation** with automatic **Baseline Alignment**.
-
-### 📥 កញ្ចប់ដំឡើងតាម Version Release (Download Installers):
-👉 **[ទាញយក Mathtype-kh-v7.4.4.pkg (All-in-One Installer)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-v7.4.4.pkg)** *(ណែនាំ: ដំឡើងទាំង Mathtype-kh.app និង Word Plugin ក្នុងពេលតែមួយ)*  
-👉 **[ទាញយក Mathtype-kh-WordPlugin-v7.4.4.pkg (Word Plugin Standalone)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-WordPlugin-v7.4.4.pkg)** *(សម្រាប់អ្នកដែលចង់ដំឡើងតែ Plugin លើ Word)*  
-👉 **[ទាញយក Remove_mathtype_kh.pkg (Uninstaller Package)](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Remove_mathtype_kh.pkg)** *(សម្រាប់លុប និងសម្អាត Mathtype-kh ទាំងអស់ចេញពីម៉ាស៊ីន)*  
-*(ចុច Double-Click លើឯកសារ `.pkg` ទាំងនេះ ដើម្បីដំណើរការលើកុំព្យូទ័រ Mac បានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
+> **Native 64-bit MathType Desktop Application for macOS** powered by a high-resolution **LaTeX Kernel Engine (300 DPI)** and deep **Microsoft Word Automation** with automatic **Baseline Alignment**.
 
 ---
 
-## ✨ លក្ខណៈពិសេសចម្បង (Key Features)
+### 📥 Download Installers (Latest Release):
 
-1. **⚡ បញ្ចូលទៅ Word ដោយចុច ១ ដង (1-Click Insert into Word)**
-   - ចុចប៊ូតុងពណ៌បៃតង **"បញ្ចូលទៅ Word"** ឬចុចផ្លូវកាត់ **`⌘ + I`**
-   - **Auto Word Mode**: ពេលវាយសមីការចប់ គ្រាន់តែចុច **`Enter`** (Return) ឬ **`⌘ + Enter`** សមីការនឹងលោតចូល Microsoft Word ភ្លាមៗដោយស្វ័យប្រវត្តិ។
+| Package | Description | Direct Download |
+|---|---|---|
+| **Mathtype-kh All-in-One** | Installs both **Mathtype-kh.app** and the **Microsoft Word Plugin Suite** *(Recommended)* | 👉 **[Download Mathtype-kh-v7.4.4.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-v7.4.4.pkg)** |
+| **Word Plugin Standalone** | Installs only the **Microsoft Word Add-in & Ribbon toolbar** | 👉 **[Download Mathtype-kh-WordPlugin-v7.4.4.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-WordPlugin-v7.4.4.pkg)** |
+| **Complete Uninstaller** | Completely removes and cleans up all app files, Word templates, and settings | 👉 **[Download Remove_mathtype_kh.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Remove_mathtype_kh.pkg)** |
 
-2. **🔄 មុខងារ Toggle TeX (ស្រង់សមីការចេញពី Word មក Mathtype-kh វិញ)**
-   - គ្រាន់តែ Select លើសមីការ ឬអត្ថបទ LaTeX ក្នុង Microsoft Word រួចចុចប៊ូតុង **`Toggle TeX`** (ឬ **`⌥ + \`** / **`⌥ + T`**)
-   - កម្មវិធីនឹងស្រង់យករូបមន្ត LaTeX ពី Word មកបើកកែសម្រួលក្នុង Mathtype-kh ភ្លាមៗ។ កែរួចចុច `Enter` នោះសមីការថ្មីនឹងជំនួសវិញភ្លាម។
-
-3. **📐 ទំហំសមីការលំនាំដើម 12pt (Default Equation Size 12pt)**
-   - កំណត់ទំហំអក្សរលំនាំដើម **12 pt** ស៊ីគ្នាយ៉ាងឥតខ្ចោះជាមួយទំហំអក្សរស្ដង់ដារនៃឯកសារ Microsoft Word។
-   - មានជម្រើសផ្លាស់ប្តូរទំហំសមីការចាប់ពី **10pt ដល់ 36pt** ទាំងលើរបារ Toolbar និងក្នុង Menu Bar `Size`។
-
-4. **⚙️ ផ្ទាំងកំណត់ផ្លូវ LaTeX ក្នុងម៉ឺនុយ Help (Config LaTeX Path)**
-   - ចូលទៅកាន់ **ជំនួយ (Help) -> ⚙️ កំណត់ផ្លូវ LaTeX Path (Config LaTeX)...**
-   - ពិនិត្យរកវត្តមានរបស់ `latex`, `dvipng`, និង `dvisvgm`
-   - គាំទ្រការកំណត់ផ្លូវដោយសេរី ឬរើសតាម Presets (`/Library/TeX/texbin`, `/opt/homebrew/bin`, `/usr/local/bin`)
-   - រក្សាទុកផ្លូវក្នុង `NSUserDefaults` ជាប់ជាអចិន្ត្រៃយ៍។
-
-5. **🎯 តម្រឹមកម្ពស់បន្ទាត់ស្វ័យប្រវត្តិ (Baseline Depth Alignment)**
-   - ប្រើប្រាស់ `dvisvgm` ដើម្បីគណនា Bounding Box និងកម្ពស់ស្រុតក្រោមបន្ទាត់ (`depth ratio`)
-   - បញ្ជា Microsoft Word តាម AppleScript ដើម្បីរៀបចំ Font Position សមីការឱ្យនៅចំជួរអក្សរស្មើស្អាត គ្មានបញ្ហាលេចខុសបន្ទាត់។
-
-6. **🛡️ គ្មានផ្ទាំង "Grant File Access" រំខាន (Word Sandbox Optimization)**
-   - រក្សាទុករូបភាពសមីការបណ្តោះអាសន្នចូលក្នុង Container Sandbox ផ្ទាល់របស់ Word (`~/Library/Containers/com.microsoft.Word/Data/tmp/`) ធ្វើឱ្យ Word អាន និងបញ្ចូលរូបភាពបាន 100% ដោយមិនទាមទារសិទ្ធិ ឬបង្ហាញផ្ទាំងរំខានឡើយ។
-
-7. **🌐 ទ្រទ្រង់ពីរភាសា (Bilingual Support)**
-   - ភាសាខ្មែរ 🇰🇭 និងភាសាអង់គ្លេស 🇺🇸 អាចប្តូរបានភ្លាមៗដោយចុចលើប៊ូតុងភាសា។
+> 💡 **Compatibility:** Universal Binary supporting both **Apple Silicon (M1/M2/M3/M4)** and **Intel** Macs on macOS 11.0 Big Sur through macOS 15+ Sequoia.  
+> 🔗 View all versions on **[GitHub Releases](https://github.com/Krotreaksmey2200/Mathtype_kh/releases)**.
 
 ---
 
-## ⌨️ គ្រាប់ចុចកាត់ (Keyboard Shortcuts)
+## ✨ Key Features
 
-| គ្រាប់ចុចកាត់ | មុខងារ (Action) |
+1. **⚡ 1-Click Insert into Microsoft Word**
+   - Click the green **"Insert into Word"** button or press **`⌘ + I`**.
+   - **Auto Word Mode:** When typing finishes, simply hit **`Enter`** (Return) or **`⌘ + Enter`** to automatically insert the equation directly into Word at the cursor position.
+
+2. **✏️ In-Place Equation Editing**
+   - Select an existing equation in Microsoft Word and click **"Edit Equation"** (កែប្រែសមីការ) on the Word ribbon.
+   - **Mathtype-kh** immediately opens, brings itself to the foreground, and loads the existing LaTeX formula into the editor canvas.
+   - When you click **"Insert into Word"**, it seamlessly replaces the old equation with the newly edited formula in-place without duplicating.
+
+3. **🔄 Toggle TeX Integration**
+   - Highlight any LaTeX code or formula (such as `$E=mc^2$`) in Microsoft Word and click **`Toggle TeX`** (or press **`⌥ + \`** / **`⌥ + T`**).
+   - Automatically converts raw text expressions into high-resolution 300 DPI equations in the background.
+
+4. **📐 Automatic Baseline Alignment**
+   - Accurately calculates the exact bounding box and depth ratio below the baseline using `dvisvgm`.
+   - Automates Word via AppleScript to adjust font position shifts, ensuring equations sit evenly on the text line with no baseline misalignment.
+
+5. **⚙️ LaTeX Path Configuration in Help Menu**
+   - Access **Help -> ⚙️ Configure LaTeX Path...** to verify your `latex`, `dvipng`, and `dvisvgm` binaries.
+   - Supports custom binary paths or convenient presets (`/Library/TeX/texbin`, `/opt/homebrew/bin`, `/usr/local/bin`), saved permanently in `NSUserDefaults`.
+
+6. **🛡️ Zero "Grant File Access" Prompts (Word Sandbox Optimized)**
+   - Generated equations are placed directly into Word's own secure container sandbox (`~/Library/Containers/com.microsoft.Word/Data/tmp/`).
+   - Word reads and inserts pictures 100% silently with no annoying file access permission popups.
+
+7. **🌐 Bilingual Interface**
+   - Toggle between **Khmer 🇰🇭** and **English 🇺🇸** with a single click at any time.
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
 |---|---|
-| **`Enter`** ឬ **`⌘ + Enter`** | បញ្ចូលសមីការទៅ Word ភ្លាមៗ (Auto Word Insertion) |
-| **`⌘ + I`** | បញ្ចូលទៅ Word (Insert into Word) |
-| **`⌥ + \`** ឬ **`⌥ + T`** | Toggle TeX (ស្រង់សមីការពី Word មក MathType) |
-| **`⌘ + C`** | ចម្លងសមីការទៅ Clipboard (Copy 300 DPI Image) |
-| **`⌘ + F`** | បង្កើតប្រភាគ (Fraction: `\frac{}{}`) |
-| **`⌘ + R`** | បង្កើតឬសការេ (Square Root: `\sqrt{}`) |
-| **`⇧ + ⌘ + R`** | បង្កើតឬសទី n (N-th Root: `\sqrt[n]{}`) |
-| **`⌘ + H`** | បង្កើតស្វ័យគុណ (Superscript: `^{}`) |
-| **`⌘ + L`** | បង្កើតសន្ទស្សន៍ (Subscript: `_{}`) |
-| **`⌘ + J`** | បង្កើតស្វ័យគុណ និងសន្ទស្សន៍ទាំងពីរ (`_{}^{}`) |
-| **`Escape`** | បិទផ្ទាំង Dialog/Modal ណាមួយ |
+| **`Enter`** or **`⌘ + Enter`** | Insert equation into Microsoft Word immediately (Auto Word Mode) |
+| **`⌘ + I`** | Insert into Word |
+| **`⌥ + \`** or **`⌥ + T`** | Toggle TeX (Convert LaTeX selection in Word) |
+| **`⌘ + C`** | Copy 300 DPI high-resolution image to clipboard |
+| **`⌘ + F`** | Insert Fraction (`\frac{}{}`) |
+| **`⌘ + R`** | Insert Square Root (`\sqrt{}`) |
+| **`⇧ + ⌘ + R`** | Insert N-th Root (`\sqrt[n]{}`) |
+| **`⌘ + H`** | Insert Superscript (`^{}`) |
+| **`⌘ + L`** | Insert Subscript (`_{}`) |
+| **`⌘ + J`** | Insert Superscript & Subscript combined (`_{}^{}`) |
+| **`Escape`** | Close any open modal or dialog |
 
 ---
 
-## 🛠️ រចនាសម្ព័ន្ធគម្រោង (Project Architecture)
+## 🛠️ Project Architecture
 
 ```
 Mathtype_kh/
 ├── src/
-│   └── main.mm          # Native Cocoa/WebKit app, LaTeX compilation kernel & Word AppleScript
+│   └── main.mm              # Native Cocoa/WebKit app, LaTeX compilation kernel & Word AppleScript
 ├── app/
-│   ├── index.html       # Web UI layout & toolbar structure
-│   ├── mathtype.js      # App logic, MathLive integration, shortcuts, localization
-│   ├── mathtype.css     # Clean Apple HIG styling, dark/light themes, modal UI
-│   ├── package.json     # Frontend dependencies (MathLive, KaTeX, html2canvas)
-│   └── assets/          # Icons, palette images, Khmer math symbols
-├── Mathtype-kh.app/     # macOS Application Bundle wrapper
-│   └── Contents/
-│       ├── Info.plist   # Bundle identifier, version & configuration
-│       └── Resources/
-│           └── App_MT_Mac.icns # High-resolution macOS Application Icon
-├── build.sh             # 1-Click build, compile & install script
-└── README.md            # Documentation
+│   ├── index.html           # Web UI layout & ribbon toolbar structure
+│   ├── mathtype.js          # App logic, MathLive integration, shortcuts, localization
+│   ├── mathtype.css         # Modern macOS styling, dark/light themes, modal UI
+│   ├── package.json         # Frontend dependencies (MathLive, KaTeX, html2canvas)
+│   └── assets/              # Icons, symbol palettes, official MathType branding
+├── word_plugin/
+│   ├── Mathtype-kh.dotm     # Microsoft Word ribbon template add-in
+│   ├── Mathtype-kh.applescript # AppleScript automation for Word
+│   └── toggle_tex_worker.py # Background TeX parsing engine
+├── packaging/
+│   ├── distribution.xml     # Distribution XML for productbuild
+│   ├── welcome.html         # macOS Installer welcome screen
+│   └── uninstaller/         # Complete cleanup scripts and configuration
+├── build.sh                 # 1-Click build, compile & local install script
+├── create_pkg.sh            # Universal PKG installer builder
+├── publish_release.py       # Automated GitHub Release publisher
+└── README.md                # Project documentation
 ```
 
 ---
 
-## 🚀 របៀប Compile និងដំឡើង (Build & Install)
+## 🚀 Building from Source
 
-### លក្ខខណ្ឌតម្រូវ (Prerequisites):
-- macOS (Apple Silicon M1/M2/M3/M4 ឬ Intel)
+### Prerequisites:
+- macOS (Apple Silicon M1/M2/M3/M4 or Intel)
 - Xcode Command Line Tools (`xcode-select --install`)
-- MacTeX ឬ BasicTeX (`brew install --cask mactex-no-gui`)
-- Node.js & npm (សម្រាប់ frontend libraries)
+- MacTeX or BasicTeX (`brew install --cask mactex-no-gui`)
+- Node.js & npm (for frontend libraries)
 
-### ដំណើរការ Build ដោយ ១ បន្ទាត់ពាក្យបញ្ជា៖
+### 1. Build and Run Locally:
 ```bash
 ./build.sh
 ```
 
-ឬ Compile ដោយដៃ៖
+### 2. Build Release Installer Packages (`.pkg`):
 ```bash
-# 1. Install frontend packages
-cd app && npm install && cd ..
+./create_pkg.sh
+```
+This builds:
+- `Mathtype-kh.pkg` (All-in-One Installer)
+- `word_plugin/Mathtype-kh.pkg` (Standalone Word Plugin)
+- `Remove_mathtype_kh.pkg` (Complete Uninstaller)
 
-# 2. Compile native Objective-C++ binary
-clang++ -O2 -std=c++17 -framework Cocoa -framework WebKit \
-  "src/main.mm" -o "Mathtype-kh.app/Contents/MacOS/Mathtype-kh"
-
-# 3. Sync frontend assets into App Bundle
-rsync -av --delete app/ Mathtype-kh.app/Contents/Resources/app/
-
-# 4. Install into /Applications and ad-hoc code sign
-rm -rf "/Applications/Mathtype-kh.app"
-cp -R "Mathtype-kh.app" "/Applications/Mathtype-kh.app"
-codesign -s - --force --deep "/Applications/Mathtype-kh.app"
-
-# 5. Launch
-open "/Applications/Mathtype-kh.app"
+### 3. Publish a New Version to GitHub:
+```bash
+python3 publish_release.py v7.4.5
 ```
 
 ---
 
-## 👤 អ្នកបង្កើត និងអភិវឌ្ឍ (Author)
+## 👤 Author & Credits
+
 - **Krot Reaksmey** ([@Krotreaksmey2200](https://github.com/Krotreaksmey2200))
 - Email: krotreaksmey2200@gmail.com
+- Repository: [https://github.com/Krotreaksmey2200/Mathtype_kh](https://github.com/Krotreaksmey2200/Mathtype_kh)
+
+---
+
+## 📄 License
+Released under the [MIT License](LICENSE) or personal educational license by K.Reaksmey.
