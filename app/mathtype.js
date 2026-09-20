@@ -953,7 +953,7 @@ async function actionInsertIntoWord() {
   isInsertingToWord = true;
   try {
     showStatus(currentLang === 'km' ? "⚡ កំពុងដំណើរការ LaTeX Kernel និងបញ្ចូលទៅ Word..." : "⚡ Running LaTeX Kernel & Inserting into Word...", false);
-    const latex = mf.getValue("latex");
+    const latex = (typeof mf !== 'undefined' && mf) ? (mf.getValue("latex") || mf.getValue()) : "";
     if (!latex || latex.trim() === "") {
       showStatus(currentLang === 'km' ? "សូមបញ្ចូលសមីការជាមុនសិន!" : "Please enter an equation first!", true);
       isInsertingToWord = false;
@@ -961,8 +961,6 @@ async function actionInsertIntoWord() {
     }
 
     saveToHistory(latex);
-
-    const dataUrl = await generateEquationImageDataUrl();
     const ratio = calculateBaselineRatio(latex);
 
     // If running in Native macOS App (C++ / Objective-C)
@@ -971,7 +969,7 @@ async function actionInsertIntoWord() {
         type: "compileAndInsertWord",
         latex: latex,
         fontSize: currentEquationSize,
-        fallbackData: dataUrl,
+        fallbackData: null,
         ratio: ratio
       });
     } else {
@@ -984,7 +982,7 @@ async function actionInsertIntoWord() {
   } finally {
     setTimeout(() => {
       isInsertingToWord = false;
-    }, 1000);
+    }, 600);
   }
 }
 
@@ -994,9 +992,8 @@ async function actionInsertIntoWord() {
 async function actionCopyPNG() {
   try {
     showStatus(currentLang === 'km' ? "⚡ កំពុងចងក្រងសមីការតាម LaTeX Kernel..." : "⚡ Compiling with LaTeX Kernel...", false);
-    const latex = mf.getValue("latex") || "x=0";
+    const latex = (typeof mf !== 'undefined' && mf) ? (mf.getValue("latex") || mf.getValue() || "x=0") : "x=0";
     saveToHistory(latex);
-    const dataUrl = await generateEquationImageDataUrl();
     const ratio = calculateBaselineRatio(latex);
 
     // Native Cocoa app bridge
@@ -1005,7 +1002,7 @@ async function actionCopyPNG() {
         type: "compileAndCopyWord",
         latex: latex,
         fontSize: currentEquationSize,
-        fallbackData: dataUrl,
+        fallbackData: null,
         ratio: ratio
       });
       showStatus(currentLang === 'km' ? "✓ បានចងក្រង LaTeX 300 DPI រួចចម្លងទៅ Clipboard!" : "✓ LaTeX 300 DPI Copied to Clipboard!", true);
@@ -1013,6 +1010,7 @@ async function actionCopyPNG() {
     }
 
     // Web Browser fallback
+    const dataUrl = await generateEquationImageDataUrl();
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     await navigator.clipboard.write([

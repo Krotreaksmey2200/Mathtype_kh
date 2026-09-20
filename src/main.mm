@@ -424,13 +424,19 @@
     NSString *pdfFile = [tempDir stringByAppendingPathComponent:@"equation.pdf"];
 
     NSString *configuredEngine = [self currentTeXEngine];
+    NSString *userPreamble = [self currentTeXPreamble];
     BOOL useXeLaTeX = NO;
     if ([configuredEngine isEqualToString:@"xelatex"]) {
         useXeLaTeX = YES;
     } else if ([configuredEngine isEqualToString:@"pdflatex"]) {
         useXeLaTeX = NO;
     } else {
-        useXeLaTeX = hasUnicode;
+        // "auto": if equation contains Unicode/Khmer, or preamble uses fontspec/XeTeX, use XeLaTeX!
+        if (hasUnicode || [userPreamble containsString:@"fontspec"] || [userPreamble containsString:@"\\setmainfont"]) {
+            useXeLaTeX = YES;
+        } else {
+            useXeLaTeX = NO;
+        }
     }
 
     if (useXeLaTeX && ![[NSFileManager defaultManager] fileExistsAtPath:xelatexBin]) {
@@ -440,11 +446,10 @@
 
     if (useXeLaTeX) {
         std::cout << "[TeX Engine] Compiling with XeLaTeX (Engine: " << [configuredEngine UTF8String] << ") at " << fontSize << "pt..." << std::endl;
-        NSString *userPreamble = [self currentTeXPreamble];
-        NSString *xePreamble = @"";
-        if ([userPreamble containsString:@"fontspec"] || [userPreamble containsString:@"\\setmainfont"]) {
-            xePreamble = userPreamble;
-        } else {
+        NSString *xePreamble = userPreamble;
+        xePreamble = [xePreamble stringByReplacingOccurrencesOfString:@"\\usepackage{lmodern}\n" withString:@""];
+        xePreamble = [xePreamble stringByReplacingOccurrencesOfString:@"\\usepackage{lmodern}" withString:@""];
+        if (![xePreamble containsString:@"fontspec"] && ![xePreamble containsString:@"\\setmainfont"]) {
             xePreamble = [NSString stringWithFormat:
                 @"%@\n"
                 @"\\usepackage{fontspec}\n"
@@ -464,7 +469,7 @@
                 @"            }\n"
                 @"        }\n"
                 @"    }\n"
-                @"}\n", userPreamble];
+                @"}\n", xePreamble];
         }
 
         NSString *texSource = [NSString stringWithFormat:
@@ -516,7 +521,24 @@
         }
     } else {
         // Standard LaTeX (pdftex)
-        NSString *preamble = [self currentTeXPreamble];
+        // Clean fontspec and Khmer font blocks so pdfLaTeX NEVER crashes
+        NSString *preamble = userPreamble;
+        if ([preamble containsString:@"fontspec"] || [preamble containsString:@"\\setmainfont"]) {
+            NSMutableArray *filteredLines = [NSMutableArray array];
+            NSArray *lines = [preamble componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+            for (NSString *l in lines) {
+                NSString *tl = [l stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+                if ([tl containsString:@"fontspec"] || [tl containsString:@"\\setmainfont"] || [tl containsString:@"\\IfFontExistsTF"] || [tl containsString:@"Khmer"]) {
+                    continue;
+                }
+                [filteredLines addObject:l];
+            }
+            preamble = [filteredLines componentsJoinedByString:@"\n"];
+        }
+        if (![preamble containsString:@"\\usepackage{lmodern}"]) {
+            preamble = [NSString stringWithFormat:@"\\usepackage{lmodern}\n%@", preamble];
+        }
+
         NSString *texSource = [NSString stringWithFormat:
             @"\\documentclass[preview,border=0pt]{standalone}\n"
             @"%@\n"
@@ -594,7 +616,12 @@
             result.height = h;
             result.depth = depth;
             if (h > 0) {
-                result.ratio = depth / h;
+                double rawRatio = depth / h;
+                if (rawRatio >= 0.0 && rawRatio <= 0.85) {
+                    result.ratio = rawRatio;
+                } else {
+                    result.ratio = 0.22;
+                }
             }
             std::cout << "[TeX Engine] Exact Bounding Box: width=" << w << "pt, height=" << h << "pt, depth=" << depth << "pt, ratio=" << result.ratio << std::endl;
         }
@@ -602,6 +629,23 @@
 
     // 4. Save PNG to Microsoft Word's own sandbox tmp folder to prevent "Grant File Access" prompt!
     if ([[NSFileManager defaultManager] fileExistsAtPath:pngFile]) {
+        // Derive exact point size from generated PNG image if SVG did not provide it
+        NSImage *renderedImg = [[NSImage alloc] initWithContentsOfFile:pngFile];
+        if (renderedImg) {
+            NSImageRep *firstRep = [[renderedImg representations] firstObject];
+            if (firstRep && [firstRep isKindOfClass:[NSBitmapImageRep class]]) {
+                NSBitmapImageRep *rep = (NSBitmapImageRep *)firstRep;
+                if (result.width <= 0) result.width = [rep pixelsWide] * 72.0 / 300.0;
+                if (result.height <= 0) result.height = [rep pixelsHigh] * 72.0 / 300.0;
+            } else {
+                if (result.width <= 0) result.width = renderedImg.size.width * 72.0 / 300.0;
+                if (result.height <= 0) result.height = renderedImg.size.height * 72.0 / 300.0;
+            }
+        }
+        if (result.width <= 0) result.width = 70.0;
+        if (result.height <= 0) result.height = 20.0;
+        if (result.ratio <= 0.0 || result.ratio > 0.85) result.ratio = 0.22;
+
         NSString *wordTmpDir = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Containers/com.microsoft.Word/Data/tmp"];
         if (![[NSFileManager defaultManager] fileExistsAtPath:wordTmpDir]) {
             [[NSFileManager defaultManager] createDirectoryAtPath:wordTmpDir withIntermediateDirectories:YES attributes:nil error:nil];
@@ -748,9 +792,9 @@
                             if (isInsert) {
                                 TeXResult *mainRes = [[TeXResult alloc] init];
                                 mainRes.pngPath = savedPath;
-                                mainRes.ratio = savedRatio;
-                                mainRes.width = savedW;
-                                mainRes.height = savedH;
+                                mainRes.ratio = (savedRatio > 0.0 && savedRatio <= 0.85) ? savedRatio : 0.22;
+                                mainRes.width = (pointSize.width > 0) ? pointSize.width : (savedW > 0 ? savedW : 70.0);
+                                mainRes.height = (pointSize.height > 0) ? pointSize.height : (savedH > 0 ? savedH : 20.0);
                                 mainRes.success = YES;
                                 [self insertEquationIntoWord:mainRes latex:savedLatex];
                             }
@@ -906,6 +950,9 @@
     NSString *escapedLatex = [latex stringByReplacingOccurrencesOfString:@"\\" withString:@"\\\\"];
     escapedLatex = [escapedLatex stringByReplacingOccurrencesOfString:@"\"" withString:@"\\\""];
     
+    if (texRes.width <= 0) texRes.width = 70.0;
+    if (texRes.height <= 0) texRes.height = 20.0;
+    if (texRes.ratio <= 0.0 || texRes.ratio > 0.85) texRes.ratio = 0.22;
     double actualDepth = texRes.height * texRes.ratio;
 
     NSString *appleScript = [NSString stringWithFormat:
@@ -928,6 +975,7 @@
         @"    try\n"
         @"        set sPos to start of content of (text object of sel)\n"
         @"        make new inline picture at (text object of sel) with properties {file name:\"%@\"}\n"
+        @"        set didInsert to true\n"
         @"        set thePic to missing value\n"
         @"        try\n"
         @"            set totalShapes to count of inline shapes of doc\n"
@@ -940,20 +988,22 @@
         @"                end if\n"
         @"            end repeat\n"
         @"        end try\n"
-        @"        if thePic is missing value then set thePic to last inline picture of doc\n"
-        @"        set didInsert to true\n"
-        @"        try\n"
-        @"            set width of thePic to %.2f\n"
-        @"            set height of thePic to %.2f\n"
-        @"            set shapeObj to text object of thePic\n"
-        @"            set font position of font object of shapeObj to -%.2f\n"
-        @"            set alternative text of thePic to \"ratio:%.4f|latex:%@\"\n"
-        @"        end try\n"
-        @"        try\n"
-        @"            set theRange to text object of thePic\n"
-        @"            collapse range theRange direction collapse end\n"
-        @"            select theRange\n"
-        @"        end try\n"
+        @"        if thePic is missing value and (count of inline shapes of doc) > 0 then\n"
+        @"            set thePic to last inline shape of doc\n"
+        @"        end if\n"
+        @"        if thePic is not missing value then\n"
+        @"            try\n"
+        @"                set width of thePic to %.2f\n"
+        @"                set height of thePic to %.2f\n"
+        @"                set alternative text of thePic to \"ratio:%.4f|latex:%@\"\n"
+        @"                set font position of font object of (text object of thePic) to -%.2f\n"
+        @"            end try\n"
+        @"            try\n"
+        @"                set theRange to text object of thePic\n"
+        @"                collapse range theRange direction collapse end\n"
+        @"                select theRange\n"
+        @"            end try\n"
+        @"        end if\n"
         @"    end try\n"
         @"    if didInsert is false then\n"
         @"        try\n"
@@ -963,7 +1013,7 @@
         @"            tell application \"System Events\" to keystroke \"v\" using command down\n"
         @"        end try\n"
         @"    end if\n"
-        @"end tell\n", texRes.pngPath, texRes.width, texRes.height, actualDepth, texRes.ratio, escapedLatex];
+        @"end tell\n", texRes.pngPath, texRes.width, texRes.height, texRes.ratio, escapedLatex, actualDepth];
 
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         @try {
