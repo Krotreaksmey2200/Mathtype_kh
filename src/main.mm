@@ -53,6 +53,7 @@
 - (void)handleToggleTeX;
 - (void)toggleTeXMenu:(id)sender;
 - (NSString *)currentTeXPreamble;
+- (NSString *)currentTeXEngine;
 - (void)showLaTeXPreambleConfig:(id)sender;
 @end
 
@@ -421,31 +422,49 @@
     NSString *svgFile = [tempDir stringByAppendingPathComponent:@"equation.svg"];
     NSString *pdfFile = [tempDir stringByAppendingPathComponent:@"equation.pdf"];
 
-    BOOL useXeLaTeX = hasUnicode && [[NSFileManager defaultManager] fileExistsAtPath:xelatexBin];
+    NSString *configuredEngine = [self currentTeXEngine];
+    BOOL useXeLaTeX = NO;
+    if ([configuredEngine isEqualToString:@"xelatex"]) {
+        useXeLaTeX = YES;
+    } else if ([configuredEngine isEqualToString:@"pdflatex"]) {
+        useXeLaTeX = NO;
+    } else {
+        useXeLaTeX = hasUnicode;
+    }
+
+    if (useXeLaTeX && ![[NSFileManager defaultManager] fileExistsAtPath:xelatexBin]) {
+        std::cerr << "[TeX Engine] Warning: XeLaTeX requested but binary not found at " << [xelatexBin UTF8String] << ". Falling back to LaTeX." << std::endl;
+        useXeLaTeX = NO;
+    }
 
     if (useXeLaTeX) {
-        std::cout << "[TeX Engine] Detected Khmer/Unicode text. Compiling with XeLaTeX at " << fontSize << "pt..." << std::endl;
-        NSString *xePreamble = 
-            @"\\usepackage{amsmath,amssymb,amsfonts}\n"
-            @"\\usepackage[version=4]{mhchem}\n"
-            @"\\usepackage{fontspec}\n"
-            @"\\IfFontExistsTF{Khmer OS Battambang}{\n"
-            @"    \\setmainfont{Khmer OS Battambang}\n"
-            @"}{\n"
-            @"    \\IfFontExistsTF{Khmer OS}{\n"
-            @"        \\setmainfont{Khmer OS}\n"
-            @"    }{\n"
-            @"        \\IfFontExistsTF{Noto Sans Khmer}{\n"
-            @"            \\setmainfont{Noto Sans Khmer}\n"
-            @"        }{\n"
-            @"            \\IfFontExistsTF{Khmer Sangam MN}{\n"
-            @"                \\setmainfont{Khmer Sangam MN}\n"
-            @"            }{\n"
-            @"                \\setmainfont{Khmer MN}\n"
-            @"            }\n"
-            @"        }\n"
-            @"    }\n"
-            @"}\n";
+        std::cout << "[TeX Engine] Compiling with XeLaTeX (Engine: " << [configuredEngine UTF8String] << ") at " << fontSize << "pt..." << std::endl;
+        NSString *userPreamble = [self currentTeXPreamble];
+        NSString *xePreamble = @"";
+        if ([userPreamble containsString:@"fontspec"] || [userPreamble containsString:@"\\setmainfont"]) {
+            xePreamble = userPreamble;
+        } else {
+            xePreamble = [NSString stringWithFormat:
+                @"%@\n"
+                @"\\usepackage{fontspec}\n"
+                @"\\IfFontExistsTF{Khmer OS Battambang}{\n"
+                @"    \\setmainfont{Khmer OS Battambang}\n"
+                @"}{\n"
+                @"    \\IfFontExistsTF{Khmer OS}{\n"
+                @"        \\setmainfont{Khmer OS}\n"
+                @"    }{\n"
+                @"        \\IfFontExistsTF{Noto Sans Khmer}{\n"
+                @"            \\setmainfont{Noto Sans Khmer}\n"
+                @"        }{\n"
+                @"            \\IfFontExistsTF{Khmer Sangam MN}{\n"
+                @"                \\setmainfont{Khmer Sangam MN}\n"
+                @"            }{\n"
+                @"                \\setmainfont{Khmer MN}\n"
+                @"            }\n"
+                @"        }\n"
+                @"    }\n"
+                @"}\n", userPreamble];
+        }
 
         NSString *texSource = [NSString stringWithFormat:
             @"\\documentclass[preview,border=0pt]{standalone}\n"
@@ -738,17 +757,26 @@
         }
     } else if ([type isEqualToString:@"setPreamble"]) {
         NSString *preamble = [NSString stringWithFormat:@"%@", body[@"preamble"] ?: @""];
+        NSString *engine = [NSString stringWithFormat:@"%@", body[@"engine"] ?: @"auto"].lowercaseString;
+        if (![engine isEqualToString:@"xelatex"] && ![engine isEqualToString:@"pdflatex"] && ![engine isEqualToString:@"auto"]) {
+            engine = @"auto";
+        }
+        [[NSUserDefaults standardUserDefaults] setObject:engine forKey:@"CustomTeXEngine"];
+
+        NSString *appSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
+        NSString *dir = [appSupport stringByAppendingPathComponent:@"Mathtype-kh"];
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+
+        NSString *enginePath = [dir stringByAppendingPathComponent:@"engine.txt"];
+        [engine writeToFile:enginePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+
         if ([preamble length] > 0) {
             [[NSUserDefaults standardUserDefaults] setObject:preamble forKey:@"CustomTeXPreamble"];
-            [[NSUserDefaults standardUserDefaults] synchronize];
-            
-            NSString *appSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
-            NSString *dir = [appSupport stringByAppendingPathComponent:@"Mathtype-kh"];
-            [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
             NSString *filePath = [dir stringByAppendingPathComponent:@"preamble.tex"];
             [preamble writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
-            std::cout << "[LaTeX Config] Updated LaTeX preamble." << std::endl;
         }
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        std::cout << "[LaTeX Config] Updated LaTeX preamble and engine: " << [engine UTF8String] << std::endl;
     } else if ([type isEqualToString:@"saveSVG"]) {
         NSString *rawLatex = body[@"latex"] ? [NSString stringWithFormat:@"%@", body[@"latex"]] : @"";
         double fontSize = body[@"fontSize"] ? [body[@"fontSize"] doubleValue] : 14.0;
@@ -810,9 +838,14 @@
         }
     } else if ([type isEqualToString:@"getPreamble"]) {
         NSString *preamble = [self currentTeXPreamble];
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@[preamble] options:0 error:nil];
-        NSString *jsonArray = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-        NSString *js = [NSString stringWithFormat:@"updateLaTeXPreamble(%@[0])", jsonArray];
+        NSString *engine = [self currentTeXEngine];
+        NSDictionary *dataDict = @{
+            @"preamble": preamble,
+            @"engine": engine
+        };
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:dataDict options:0 error:nil];
+        NSString *jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        NSString *js = [NSString stringWithFormat:@"updateLaTeXPreambleAndEngine(%@)", jsonStr];
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.webView evaluateJavaScript:js completionHandler:nil];
         });
@@ -995,6 +1028,22 @@
         return saved;
     }
     return @"\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage[version=4]{mhchem}\n\\usepackage{xcolor}\n\\nopagecolor";
+}
+
+- (NSString *)currentTeXEngine {
+    NSString *appSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *filePath = [[appSupport stringByAppendingPathComponent:@"Mathtype-kh"] stringByAppendingPathComponent:@"engine.txt"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        NSString *content = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
+        if (content && [content stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length > 0) {
+            return [content stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].lowercaseString;
+        }
+    }
+    NSString *saved = [[NSUserDefaults standardUserDefaults] stringForKey:@"CustomTeXEngine"];
+    if (saved && [saved stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length > 0) {
+        return [saved stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].lowercaseString;
+    }
+    return @"auto";
 }
 
 - (void)toggleTeXMenu:(id)sender {

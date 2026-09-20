@@ -35,6 +35,18 @@ def find_tex_bin():
             return c
     return "/Library/TeX/texbin"
 
+def get_configured_engine():
+    engine_file = os.path.expanduser("~/Library/Application Support/Mathtype-kh/engine.txt")
+    if os.path.exists(engine_file):
+        try:
+            with open(engine_file, "r", encoding="utf-8") as f:
+                eng = f.read().strip().lower()
+                if eng in ("xelatex", "pdflatex", "auto"):
+                    return eng
+        except Exception:
+            pass
+    return "auto"
+
 def compile_latex(formula, font_size=12.0):
     temp_dir = tempfile.mkdtemp(prefix="mtk_toggle_")
     try:
@@ -57,32 +69,55 @@ def compile_latex(formula, font_size=12.0):
             body = f"$ \\displaystyle {trimmed} $"
             
         has_unicode = any(ord(c) > 127 for c in formula)
+        configured_engine = get_configured_engine()
+        if configured_engine == "xelatex":
+            use_xelatex = True
+        elif configured_engine == "pdflatex":
+            use_xelatex = False
+        else:
+            use_xelatex = has_unicode
+
         tex_bin = find_tex_bin()
         env = os.environ.copy()
         env["PATH"] = f"{tex_bin}:/usr/bin:/bin:/usr/sbin:/sbin"
 
-        if has_unicode:
-            xe_preamble = r"""\usepackage{amsmath,amssymb,amsfonts}
+        if use_xelatex:
+            user_preamble = r"""\usepackage{amsmath,amssymb,amsfonts}
+\usepackage[version=4]{mhchem}"""
+            preamble_path = os.path.expanduser("~/Library/Application Support/Mathtype-kh/preamble.tex")
+            if os.path.exists(preamble_path):
+                try:
+                    with open(preamble_path, "r", encoding="utf-8") as pf:
+                        content = pf.read().strip()
+                        if content:
+                            user_preamble = content
+                except Exception:
+                    pass
+
+            if "fontspec" in user_preamble or r"\setmainfont" in user_preamble:
+                xe_preamble = user_preamble
+            else:
+                xe_preamble = rf"""{user_preamble}
 \usepackage{xcolor}
 \nopagecolor
 \usepackage{fontspec}
-\IfFontExistsTF{Khmer OS Battambang}{
-    \setmainfont{Khmer OS Battambang}
-}{
-    \IfFontExistsTF{Khmer OS}{
-        \setmainfont{Khmer OS}
-    }{
-        \IfFontExistsTF{Noto Sans Khmer}{
-            \setmainfont{Noto Sans Khmer}
-        }{
-            \IfFontExistsTF{Khmer Sangam MN}{
-                \setmainfont{Khmer Sangam MN}
-            }{
-                \setmainfont{Khmer MN}
-            }
-        }
-    }
-}
+\IfFontExistsTF{{Khmer OS Battambang}}{{
+    \setmainfont{{Khmer OS Battambang}}
+}}{{
+    \IfFontExistsTF{{Khmer OS}}{{
+        \setmainfont{{Khmer OS}}
+    }}{{
+        \IfFontExistsTF{{Noto Sans Khmer}}{{
+            \setmainfont{{Noto Sans Khmer}}
+        }}{{
+            \IfFontExistsTF{{Khmer Sangam MN}}{{
+                \setmainfont{{Khmer Sangam MN}}
+            }}{{
+                \setmainfont{{Khmer MN}}
+            }}
+        }}
+    }}
+}}
 """
             tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
 {xe_preamble}

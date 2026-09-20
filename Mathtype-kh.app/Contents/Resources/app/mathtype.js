@@ -1343,20 +1343,72 @@ function saveCustomTeXPath() {
 
 const DEFAULT_PREAMBLE = `\\usepackage{lmodern}
 \\usepackage{amsmath,amssymb,amsfonts}
+\\usepackage[version=4]{mhchem}
 \\usepackage{xcolor}
 \\nopagecolor`;
+
+const XELATEX_KHMER_PREAMBLE = `\\usepackage{amsmath,amssymb,amsfonts}
+\\usepackage[version=4]{mhchem}
+\\usepackage{xcolor}
+\\nopagecolor
+\\usepackage{fontspec}
+\\IfFontExistsTF{Khmer OS Battambang}{
+    \\setmainfont{Khmer OS Battambang}
+}{
+    \\IfFontExistsTF{Khmer OS}{
+        \\setmainfont{Khmer OS}
+    }{
+        \\IfFontExistsTF{Noto Sans Khmer}{
+            \\setmainfont{Noto Sans Khmer}
+        }{
+            \\IfFontExistsTF{Khmer Sangam MN}{
+                \\setmainfont{Khmer Sangam MN}
+            }{
+                \\setmainfont{Khmer MN}
+            }
+        }
+    }
+}`;
 
 function showLaTeXPreambleModal() {
   const title = document.getElementById("modalTitle");
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
 
-  title.innerHTML = currentLang === 'km' ? "📜 កំណត់ LaTeX Preamble (Packages & Macros)" : "📜 Configure LaTeX Preamble";
+  title.innerHTML = currentLang === 'km' ? "📜 កំណត់ LaTeX Preamble & TeX Engine" : "📜 Configure LaTeX Preamble & TeX Engine";
 
   const savedPreamble = localStorage.getItem("mathtype_custom_preamble") || DEFAULT_PREAMBLE;
+  const savedEngine = localStorage.getItem("mathtype_custom_engine") || "auto";
 
   body.innerHTML = `
     <div class="tex-config-container">
+      <!-- 1. Engine Selection Section -->
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; display:flex; flex-direction:column; gap:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12.5px; font-weight:700; color:#1e293b;">
+            ⚙️ ${currentLang === 'km' ? 'ជ្រើសរើស TeX Engine (Compiler)៖' : 'Choose TeX Engine (Compiler):'}
+          </span>
+          <span id="engineBadge" style="font-size:11px; padding:2px 8px; border-radius:12px; background:#dbeafe; color:#1e40af; font-weight:600;">
+            ${savedEngine === 'xelatex' ? 'XeLaTeX (Khmer & Unicode)' : (savedEngine === 'pdflatex' ? 'pdfLaTeX (Standard)' : 'Auto-detect')}
+          </span>
+        </div>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:12px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="texEngine" value="auto" ${savedEngine === 'auto' ? 'checked' : ''} onchange="onEngineChange(this.value)">
+            <span>⚡ <b>Auto</b> (${currentLang === 'km' ? 'ស្វ័យប្រវត្តិតាមអក្សរ' : 'Auto-detect'})</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="texEngine" value="xelatex" ${savedEngine === 'xelatex' ? 'checked' : ''} onchange="onEngineChange(this.value)">
+            <span>🇰🇭 <b>XeLaTeX</b> (${currentLang === 'km' ? 'គាំទ្រអក្សរខ្មែរ & Modern Font' : 'Khmer & Unicode'})</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="texEngine" value="pdflatex" ${savedEngine === 'pdflatex' ? 'checked' : ''} onchange="onEngineChange(this.value)">
+            <span>📄 <b>pdfLaTeX</b> (${currentLang === 'km' ? 'ស្តង់ដារល្បឿនលឿន' : 'Fast Standard TeX'})</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 2. Preamble Code Area -->
       <p style="margin: 0; font-size: 12.5px; color: #475569;">
         ${currentLang === 'km' 
           ? "បន្ថែម ឬកែប្រែកញ្ចប់ Packages (ឧ. amsmath, physics, siunitx, bm) និង Macro Commands (\\newcommand) សម្រាប់ប្រើប្រាស់ក្នុងដំណើរការបង្កើតសមីការ 300 DPI៖"
@@ -1365,19 +1417,21 @@ function showLaTeXPreambleModal() {
 
       <textarea id="texPreambleInput" class="tex-textarea" placeholder="${DEFAULT_PREAMBLE}">${savedPreamble}</textarea>
 
+      <!-- 3. Quick Insert Presets -->
       <div>
         <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">${currentLang === 'km' ? "កញ្ចប់ពេញនិយម (Quick Insert)៖" : "Quick Insert Packages:"}</span>
-        <div class="tex-presets" style="margin-top: 6px;">
+        <div class="tex-presets" style="margin-top: 6px; display:flex; flex-wrap:wrap; gap:5px;">
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{physics}')">+ physics</button>
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{siunitx}')">+ siunitx</button>
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{bm}')">+ bm (Bold Math)</button>
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{cancel}')">+ cancel</button>
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{mathtools}')">+ mathtools</button>
+          <button class="tex-preset-btn" onclick="loadXeLaTeXKhmerPreset()" style="background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8; font-weight:600;">🇰🇭 Khmer Fontspec (XeLaTeX)</button>
         </div>
       </div>
 
       <div style="font-size: 11.5px; color: #64748b;">
-        💡 <b>${currentLang === 'km' ? "ចំណាំ" : "Note"}:</b> ${currentLang === 'km' ? "រាល់កញ្ចប់ដែលអ្នកបន្ថែមនៅទីនេះ នឹងត្រូវបានប្រើប្រាស់ដោយស្វ័យប្រវត្តិនៅពេល compile សមីការ និងបញ្ជូនទៅកាន់ Microsoft Word។" : "All packages and macros defined here will be automatically applied when compiling equations for Microsoft Word."}
+        💡 <b>${currentLang === 'km' ? "ចំណាំ" : "Note"}:</b> ${currentLang === 'km' ? "ការកំណត់ Engine និង Packages នៅទីនេះ នឹងដំណើរការរួមគ្នាទាំងលើកម្មវិធី Mathtype-kh និងលើ Microsoft Word Add-in (Toggle TeX) ដោយស្វ័យប្រវត្តិ។" : "Engine and preamble configurations defined here will automatically apply to both Mathtype-kh and Microsoft Word Add-in (Toggle TeX)."}
       </div>
     </div>
   `;
@@ -1392,10 +1446,42 @@ function showLaTeXPreambleModal() {
 
   document.getElementById("modalOverlay").classList.remove("hidden");
 
-  // Query native app for preamble if available
+  // Query native app for preamble and engine if available
   if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
     window.webkit.messageHandlers.nativeApp.postMessage({ type: "getPreamble" });
   }
+}
+
+function onEngineChange(engine) {
+  const badge = document.getElementById("engineBadge");
+  if (badge) {
+    if (engine === "xelatex") {
+      badge.innerText = currentLang === 'km' ? "XeLaTeX (ខ្មែរ & Unicode)" : "XeLaTeX (Khmer & Unicode)";
+      badge.style.background = "#dbeafe";
+      badge.style.color = "#1e40af";
+    } else if (engine === "pdflatex") {
+      badge.innerText = currentLang === 'km' ? "pdfLaTeX (ស្តង់ដារ)" : "pdfLaTeX (Standard)";
+      badge.style.background = "#f1f5f9";
+      badge.style.color = "#475569";
+    } else {
+      badge.innerText = currentLang === 'km' ? "Auto (ស្វ័យប្រវត្តិ)" : "Auto-detect";
+      badge.style.background = "#dcfce7";
+      badge.style.color = "#166534";
+    }
+  }
+}
+
+function loadXeLaTeXKhmerPreset() {
+  const textarea = document.getElementById("texPreambleInput");
+  if (textarea) {
+    textarea.value = XELATEX_KHMER_PREAMBLE;
+  }
+  const xeRadio = document.querySelector('input[name="texEngine"][value="xelatex"]');
+  if (xeRadio) {
+    xeRadio.checked = true;
+    onEngineChange("xelatex");
+  }
+  showStatus(currentLang === 'km' ? "✓ បានជ្រើសរើស XeLaTeX Khmer Fontspec!" : "✓ Loaded XeLaTeX Khmer Fontspec!", true);
 }
 
 function insertPreamblePackage(pkgCode) {
@@ -1412,31 +1498,54 @@ function resetPreambleDefault() {
   if (textarea) {
     textarea.value = DEFAULT_PREAMBLE;
   }
+  const autoRadio = document.querySelector('input[name="texEngine"][value="auto"]');
+  if (autoRadio) {
+    autoRadio.checked = true;
+    onEngineChange("auto");
+  }
 }
 
-function updateLaTeXPreamble(preamble) {
+function updateLaTeXPreambleAndEngine(data) {
+  if (!data) return;
+  const preamble = data.preamble;
+  const engine = data.engine || "auto";
   const textarea = document.getElementById("texPreambleInput");
   if (textarea && preamble && preamble.trim().length > 0) {
     textarea.value = preamble;
     localStorage.setItem("mathtype_custom_preamble", preamble);
   }
+  const radio = document.querySelector(`input[name="texEngine"][value="${engine}"]`);
+  if (radio) {
+    radio.checked = true;
+    onEngineChange(engine);
+  }
+  localStorage.setItem("mathtype_custom_engine", engine);
+}
+
+function updateLaTeXPreamble(preamble) {
+  updateLaTeXPreambleAndEngine({ preamble: preamble, engine: "auto" });
 }
 
 function saveCustomPreamble() {
   const textarea = document.getElementById("texPreambleInput");
   const preamble = textarea ? textarea.value.trim() : DEFAULT_PREAMBLE;
+  const selectedEngine = document.querySelector('input[name="texEngine"]:checked')?.value || "auto";
 
   localStorage.setItem("mathtype_custom_preamble", preamble);
+  localStorage.setItem("mathtype_custom_engine", selectedEngine);
 
   if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
     window.webkit.messageHandlers.nativeApp.postMessage({
       type: "setPreamble",
-      preamble: preamble
+      preamble: preamble,
+      engine: selectedEngine
     });
   }
 
   closeModal();
-  showStatus(currentLang === 'km' ? "✓ បានរក្សាទុក LaTeX Preamble រួចរាល់!" : "✓ LaTeX Preamble saved successfully!", true);
+  showStatus(currentLang === 'km' 
+    ? `✓ បានរក្សាទុក Preamble & Engine (${selectedEngine.toUpperCase()}) រួចរាល់!` 
+    : `✓ Saved Preamble & Engine (${selectedEngine.toUpperCase()}) successfully!`, true);
 }
 
 function closeModal() {
