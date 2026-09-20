@@ -76,7 +76,7 @@
     [fileMenu addItemWithTitle:@"New Equation" action:@selector(newEquation:) keyEquivalent:@"n"];
     [fileMenu addItem:[NSMenuItem separatorItem]];
     [fileMenu addItemWithTitle:@"Open Microsoft Word" action:@selector(openWordMenu:) keyEquivalent:@"o"];
-    [fileMenu addItemWithTitle:@"Insert into Word (LaTeX Kernel)" action:@selector(insertToWordMenu:) keyEquivalent:@"i"];
+    [fileMenu addItemWithTitle:@"Insert into Word" action:@selector(insertToWordMenu:) keyEquivalent:@"i"];
     [fileMenu addItemWithTitle:@"Toggle TeX (From Word Selection)" action:@selector(toggleTeXMenu:) keyEquivalent:@"\\"];
     [fileMenu addItemWithTitle:@"Save as PNG Image..." action:@selector(savePNG:) keyEquivalent:@"s"];
     [fileMenu addItemWithTitle:@"Save as LaTeX..." action:@selector(saveLaTeX:) keyEquivalent:@""];
@@ -130,7 +130,7 @@
                                               styleMask:style
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
-    [self.window setTitle:@"Mathtype-kh (LaTeX Kernel Edition)"];
+    [self.window setTitle:@"Mathtype-kh"];
     [self.window setMinSize:NSMakeSize(800, 500)];
     [self.window setDelegate:self];
     

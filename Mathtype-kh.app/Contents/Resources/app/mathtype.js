@@ -5,7 +5,7 @@
 
 let mf = null;
 let currentActivePalette = null;
-let currentZoom = 1.5;
+let currentZoom = 1.0;
 let currentLang = 'km'; // 'km' or 'en'
 
 // Language dictionaries
@@ -433,6 +433,7 @@ window.addEventListener("DOMContentLoaded", () => {
   setupShortcuts();
   applyLanguage();
   setEquationSize(12);
+  setZoom(1.0);
 
   setTimeout(() => mf.focus(), 150);
 });
@@ -1017,7 +1018,8 @@ function setZoom(factor) {
   currentZoom = factor;
   document.getElementById("canvasWrapper").style.transform = `scale(${factor})`;
   document.getElementById("canvasWrapper").style.transformOrigin = "top left";
-  document.getElementById("zoomSelect").value = factor.toString();
+  const select = document.getElementById("zoomSelect");
+  if (select) select.value = factor.toFixed(1);
   showStatus(`Zoom: ${Math.round(factor * 100)}%`);
 }
 
