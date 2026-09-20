@@ -713,6 +713,27 @@ math-field::part(menu-toggle) {
   background: #ffffff;
   box-shadow: 0 0 0 2px rgba(43,108,176,0.2);
 }
+.tex-textarea {
+  width: 100%;
+  min-height: 150px;
+  max-height: 280px;
+  padding: 8px 10px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.45;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  outline: none;
+  background: #f8fafc;
+  color: #1e293b;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.tex-textarea:focus {
+  border-color: #2b6cb0;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(43,108,176,0.2);
+}
 .tex-btn {
   padding: 6px 13px;
   font-size: 12px;

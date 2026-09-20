@@ -47,6 +47,8 @@
 - (void)insertEquationIntoWord:(TeXResult *)texRes latex:(NSString *)latex;
 - (void)handleToggleTeX;
 - (void)toggleTeXMenu:(id)sender;
+- (NSString *)currentTeXPreamble;
+- (void)showLaTeXPreambleConfig:(id)sender;
 @end
 
 @implementation AppDelegate
@@ -103,6 +105,7 @@
     NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:@"Help"];
     [helpMenu addItemWithTitle:@"Keyboard Shortcuts Guide..." action:@selector(showHelp:) keyEquivalent:@"?"];
     [helpMenu addItemWithTitle:@"Configure LaTeX Path..." action:@selector(showLaTeXConfig:) keyEquivalent:@""];
+    [helpMenu addItemWithTitle:@"Configure LaTeX Preamble..." action:@selector(showLaTeXPreambleConfig:) keyEquivalent:@""];
     [helpMenu addItem:[NSMenuItem separatorItem]];
     [helpMenu addItemWithTitle:@"About Mathtype-kh..." action:@selector(showAbout:) keyEquivalent:@""];
     [helpMenuItem setSubmenu:helpMenu];
@@ -324,17 +327,15 @@
         bodyContent = [NSString stringWithFormat:@"$ \\displaystyle %@ $", trimmed];
     }
 
+    NSString *preamble = [self currentTeXPreamble];
     double baselineSkip = fontSize * 1.25;
     NSString *texSource = [NSString stringWithFormat:
         @"\\documentclass[preview,border=0pt]{standalone}\n"
-        @"\\usepackage{lmodern}\n"
-        @"\\usepackage{amsmath,amssymb,amsfonts}\n"
-        @"\\usepackage{xcolor}\n"
-        @"\\nopagecolor\n"
+        @"%@\n"
         @"\\begin{document}\n"
         @"\\fontsize{%.1fpt}{%.1fpt}\\selectfont\n"
         @"%@\n"
-        @"\\end{document}\n", fontSize, baselineSkip, bodyContent];
+        @"\\end{document}\n", preamble, fontSize, baselineSkip, bodyContent];
 
     [texSource writeToFile:texFile atomically:YES encoding:NSUTF8StringEncoding error:nil];
 
@@ -559,6 +560,27 @@
             [[NSUserDefaults standardUserDefaults] synchronize];
             std::cout << "[LaTeX Config] Updated TeX bin path to: " << [path UTF8String] << std::endl;
         }
+    } else if ([type isEqualToString:@"setPreamble"]) {
+        NSString *preamble = [NSString stringWithFormat:@"%@", body[@"preamble"] ?: @""];
+        if ([preamble length] > 0) {
+            [[NSUserDefaults standardUserDefaults] setObject:preamble forKey:@"CustomTeXPreamble"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+            
+            NSString *appSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
+            NSString *dir = [appSupport stringByAppendingPathComponent:@"Mathtype-kh"];
+            [[NSFileManager defaultManager] createDirectoryAtPath:dir withIntermediateDirectories:YES attributes:nil error:nil];
+            NSString *filePath = [dir stringByAppendingPathComponent:@"preamble.tex"];
+            [preamble writeToFile:filePath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+            std::cout << "[LaTeX Config] Updated LaTeX preamble." << std::endl;
+        }
+    } else if ([type isEqualToString:@"getPreamble"]) {
+        NSString *preamble = [self currentTeXPreamble];
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:@[preamble] options:0 error:nil];
+        NSString *jsonArray = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+        NSString *js = [NSString stringWithFormat:@"updateLaTeXPreamble(%@[0])", jsonArray];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.webView evaluateJavaScript:js completionHandler:nil];
+        });
     }
 }
 
@@ -673,6 +695,26 @@
 
 - (void)showLaTeXConfig:(id)sender {
     [self.webView evaluateJavaScript:@"showLaTeXConfigModal()" completionHandler:nil];
+}
+
+- (void)showLaTeXPreambleConfig:(id)sender {
+    [self.webView evaluateJavaScript:@"showLaTeXPreambleModal()" completionHandler:nil];
+}
+
+- (NSString *)currentTeXPreamble {
+    NSString *appSupport = [NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *filePath = [[appSupport stringByAppendingPathComponent:@"Mathtype-kh"] stringByAppendingPathComponent:@"preamble.tex"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        NSString *content = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
+        if (content && [content stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length > 0) {
+            return content;
+        }
+    }
+    NSString *saved = [[NSUserDefaults standardUserDefaults] stringForKey:@"CustomTeXPreamble"];
+    if (saved && [saved stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]].length > 0) {
+        return saved;
+    }
+    return @"\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage{xcolor}\n\\nopagecolor";
 }
 
 - (void)toggleTeXMenu:(id)sender {

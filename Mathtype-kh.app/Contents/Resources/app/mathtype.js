@@ -1183,6 +1183,104 @@ function saveCustomTeXPath() {
   showStatus(currentLang === 'km' ? `✓ បានកំណត់ផ្លូវ LaTeX៖ ${path}` : `✓ LaTeX Path saved: ${path}`, true);
 }
 
+const DEFAULT_PREAMBLE = `\\usepackage{lmodern}
+\\usepackage{amsmath,amssymb,amsfonts}
+\\usepackage{xcolor}
+\\nopagecolor`;
+
+function showLaTeXPreambleModal() {
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const footer = document.getElementById("modalFooter");
+
+  title.innerHTML = currentLang === 'km' ? "📜 កំណត់ LaTeX Preamble (Packages & Macros)" : "📜 Configure LaTeX Preamble";
+
+  const savedPreamble = localStorage.getItem("mathtype_custom_preamble") || DEFAULT_PREAMBLE;
+
+  body.innerHTML = `
+    <div class="tex-config-container">
+      <p style="margin: 0; font-size: 12.5px; color: #475569;">
+        ${currentLang === 'km' 
+          ? "បន្ថែម ឬកែប្រែកញ្ចប់ Packages (ឧ. amsmath, physics, siunitx, bm) និង Macro Commands (\\newcommand) សម្រាប់ប្រើប្រាស់ក្នុងដំណើរការបង្កើតសមីការ 300 DPI៖"
+          : "Add or edit LaTeX packages (e.g. amsmath, physics, siunitx, bm) and custom macros (\\newcommand) used during 300 DPI equation rendering:"}
+      </p>
+
+      <textarea id="texPreambleInput" class="tex-textarea" placeholder="${DEFAULT_PREAMBLE}">${savedPreamble}</textarea>
+
+      <div>
+        <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">${currentLang === 'km' ? "កញ្ចប់ពេញនិយម (Quick Insert)៖" : "Quick Insert Packages:"}</span>
+        <div class="tex-presets" style="margin-top: 6px;">
+          <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{physics}')">+ physics</button>
+          <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{siunitx}')">+ siunitx</button>
+          <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{bm}')">+ bm (Bold Math)</button>
+          <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{cancel}')">+ cancel</button>
+          <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{mathtools}')">+ mathtools</button>
+        </div>
+      </div>
+
+      <div style="font-size: 11.5px; color: #64748b;">
+        💡 <b>${currentLang === 'km' ? "ចំណាំ" : "Note"}:</b> ${currentLang === 'km' ? "រាល់កញ្ចប់ដែលអ្នកបន្ថែមនៅទីនេះ នឹងត្រូវបានប្រើប្រាស់ដោយស្វ័យប្រវត្តិនៅពេល compile សមីការ និងបញ្ជូនទៅកាន់ Microsoft Word។" : "All packages and macros defined here will be automatically applied when compiling equations for Microsoft Word."}
+      </div>
+    </div>
+  `;
+
+  if (footer) {
+    footer.innerHTML = `
+      <button class="tex-btn" onclick="resetPreambleDefault()" style="margin-right: auto;">${currentLang === 'km' ? "🔄 យកលំនាំដើមវិញ" : "🔄 Reset Default"}</button>
+      <button class="tex-btn" onclick="closeModal()" style="margin-right: 8px;">${currentLang === 'km' ? "បោះបង់" : "Cancel"}</button>
+      <button class="tex-btn primary" onclick="saveCustomPreamble()">${currentLang === 'km' ? "💾 រក្សាទុក & ប្រើប្រាស់" : "💾 Save & Apply"}</button>
+    `;
+  }
+
+  document.getElementById("modalOverlay").classList.remove("hidden");
+
+  // Query native app for preamble if available
+  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+    window.webkit.messageHandlers.nativeApp.postMessage({ type: "getPreamble" });
+  }
+}
+
+function insertPreamblePackage(pkgCode) {
+  const textarea = document.getElementById("texPreambleInput");
+  if (!textarea) return;
+  if (!textarea.value.includes(pkgCode)) {
+    textarea.value = textarea.value.trim() + "\n" + pkgCode;
+  }
+  textarea.focus();
+}
+
+function resetPreambleDefault() {
+  const textarea = document.getElementById("texPreambleInput");
+  if (textarea) {
+    textarea.value = DEFAULT_PREAMBLE;
+  }
+}
+
+function updateLaTeXPreamble(preamble) {
+  const textarea = document.getElementById("texPreambleInput");
+  if (textarea && preamble && preamble.trim().length > 0) {
+    textarea.value = preamble;
+    localStorage.setItem("mathtype_custom_preamble", preamble);
+  }
+}
+
+function saveCustomPreamble() {
+  const textarea = document.getElementById("texPreambleInput");
+  const preamble = textarea ? textarea.value.trim() : DEFAULT_PREAMBLE;
+
+  localStorage.setItem("mathtype_custom_preamble", preamble);
+
+  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+    window.webkit.messageHandlers.nativeApp.postMessage({
+      type: "setPreamble",
+      preamble: preamble
+    });
+  }
+
+  closeModal();
+  showStatus(currentLang === 'km' ? "✓ បានរក្សាទុក LaTeX Preamble រួចរាល់!" : "✓ LaTeX Preamble saved successfully!", true);
+}
+
 function closeModal() {
   document.getElementById("modalOverlay").classList.add("hidden");
   const footer = document.getElementById("modalFooter");

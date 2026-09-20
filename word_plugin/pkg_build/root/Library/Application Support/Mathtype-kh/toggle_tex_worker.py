@@ -56,11 +56,19 @@ def compile_latex(formula, font_size=12.0):
         else:
             body = f"$ \\displaystyle {trimmed} $"
             
+        preamble_path = os.path.expanduser("~/Library/Application Support/Mathtype-kh/preamble.tex")
+        preamble = "\\usepackage{lmodern}\n\\usepackage{amsmath,amssymb,amsfonts}\n\\usepackage{xcolor}\n\\nopagecolor"
+        if os.path.exists(preamble_path):
+            try:
+                with open(preamble_path, "r", encoding="utf-8") as pf:
+                    content = pf.read().strip()
+                    if content:
+                        preamble = content
+            except Exception:
+                pass
+
         tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
-\usepackage{{lmodern}}
-\usepackage{{amsmath,amssymb,amsfonts}}
-\usepackage{{xcolor}}
-\nopagecolor
+{preamble}
 \begin{{document}}
 \fontsize{{{font_size}pt}}{{{font_size * 1.25}pt}}\selectfont
 {body}
