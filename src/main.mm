@@ -1,5 +1,5 @@
 /**
- * MathType 7 - 64-bit Native C++ / Objective-C Edition
+ * Mathtype-kh - 64-bit Native C++ / Objective-C Edition
  * Powered by LaTeX Kernel (/Library/TeX/texbin/latex + dvipng + dvisvgm)
  * With Microsoft Word Auto-Insertion & True Baseline Alignment
  */
@@ -57,14 +57,14 @@
     
     // Application Menu
     NSMenuItem *appMenuItem = [[NSMenuItem alloc] init];
-    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"MathType"];
-    [appMenu addItemWithTitle:@"About MathType 7" action:@selector(showAbout:) keyEquivalent:@""];
+    NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"Mathtype-kh"];
+    [appMenu addItemWithTitle:@"About Mathtype-kh" action:@selector(showAbout:) keyEquivalent:@""];
     [appMenu addItem:[NSMenuItem separatorItem]];
-    [appMenu addItemWithTitle:@"Hide MathType" action:@selector(hide:) keyEquivalent:@"h"];
+    [appMenu addItemWithTitle:@"Hide Mathtype-kh" action:@selector(hide:) keyEquivalent:@"h"];
     [appMenu addItemWithTitle:@"Hide Others" action:@selector(hideOtherApplications:) keyEquivalent:@"h"];
     [appMenu addItemWithTitle:@"Show All" action:@selector(unhideAllApplications:) keyEquivalent:@""];
     [appMenu addItem:[NSMenuItem separatorItem]];
-    [appMenu addItemWithTitle:@"Quit MathType" action:@selector(terminate:) keyEquivalent:@"q"];
+    [appMenu addItemWithTitle:@"Quit Mathtype-kh" action:@selector(terminate:) keyEquivalent:@"q"];
     [appMenuItem setSubmenu:appMenu];
     [mainMenu addItem:appMenuItem];
     
@@ -104,7 +104,7 @@
     [helpMenu addItemWithTitle:@"Keyboard Shortcuts Guide..." action:@selector(showHelp:) keyEquivalent:@"?"];
     [helpMenu addItemWithTitle:@"Configure LaTeX Path..." action:@selector(showLaTeXConfig:) keyEquivalent:@""];
     [helpMenu addItem:[NSMenuItem separatorItem]];
-    [helpMenu addItemWithTitle:@"About MathType 7 (64-bit)..." action:@selector(showAbout:) keyEquivalent:@""];
+    [helpMenu addItemWithTitle:@"About Mathtype-kh..." action:@selector(showAbout:) keyEquivalent:@""];
     [helpMenuItem setSubmenu:helpMenu];
     [mainMenu addItem:helpMenuItem];
     
@@ -127,7 +127,7 @@
                                               styleMask:style
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
-    [self.window setTitle:@"MathType 7 (LaTeX Kernel Edition)"];
+    [self.window setTitle:@"Mathtype-kh (LaTeX Kernel Edition)"];
     [self.window setMinSize:NSMakeSize(800, 500)];
     [self.window setDelegate:self];
     
@@ -194,7 +194,7 @@
             close(server_fd);
             return;
         }
-        std::cout << "[Local Server] MathType 7 Word Integration server listening on 127.0.0.1:45678" << std::endl;
+        std::cout << "[Local Server] Mathtype-kh Word Integration server listening on 127.0.0.1:45678" << std::endl;
         
         while (true) {
             struct sockaddr_in client_addr;
@@ -775,7 +775,7 @@
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        std::cout << "[MathType 7 LaTeX Kernel] Launching engine (default font size 12pt)..." << std::endl;
+        std::cout << "[Mathtype-kh LaTeX Kernel] Launching engine (default font size 12pt)..." << std::endl;
         NSApplication *app = [NSApplication sharedApplication];
         [app setActivationPolicy:NSApplicationActivationPolicyRegular];
         AppDelegate *delegate = [[AppDelegate alloc] init];

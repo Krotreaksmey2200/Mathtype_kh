@@ -1,19 +1,27 @@
 #!/bin/bash
 
 TARGET_MOUNT="${2:-/}"
-SOURCE_DIR="$TARGET_MOUNT/Library/Application Support/Mathtype_kh"
+SOURCE_DIR="$TARGET_MOUNT/Library/Application Support/Mathtype-kh"
+if [ ! -d "$SOURCE_DIR" ]; then
+    SOURCE_DIR="$TARGET_MOUNT/Library/Application Support/Mathtype_kh"
+fi
+if [ ! -d "$SOURCE_DIR" ]; then
+    SOURCE_DIR="/Library/Application Support/Mathtype-kh"
+fi
 if [ ! -d "$SOURCE_DIR" ]; then
     SOURCE_DIR="/Library/Application Support/Mathtype_kh"
 fi
 
-DOTM_NAME="Mathtype_kh.dotm"
+DOTM_NAME="Mathtype-kh.dotm"
+DOTM_NAME_OLD="Mathtype_kh.dotm"
 SCPT_NAME="MacTeXMathEditor.scpt"
-SCPT_NAME_KH="Mathtype_kh.scpt"
+SCPT_NAME_KH="Mathtype-kh.scpt"
+SCPT_NAME_KH_OLD="Mathtype_kh.scpt"
 
-echo "Installing Mathtype_kh Word Plugin from $SOURCE_DIR..."
+echo "Installing Mathtype-kh Word Plugin from $SOURCE_DIR..."
 
-if [ ! -f "$SOURCE_DIR/$DOTM_NAME" ]; then
-    echo "Error: $SOURCE_DIR/$DOTM_NAME not found."
+if [ ! -f "$SOURCE_DIR/$DOTM_NAME" ] && [ ! -f "$SOURCE_DIR/$DOTM_NAME_OLD" ]; then
+    echo "Error: Template not found in $SOURCE_DIR."
     exit 0
 fi
 
@@ -21,9 +29,15 @@ fi
 SYS_WORD_STARTUP="$TARGET_MOUNT/Library/Application Support/Microsoft/Office365/User Content.localized/Startup.localized/Word"
 if [ -d "$TARGET_MOUNT/Library/Application Support/Microsoft/Office365" ]; then
     mkdir -p "$SYS_WORD_STARTUP" 2>/dev/null || true
-    cp -f "$SOURCE_DIR/$DOTM_NAME" "$SYS_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    if [ -f "$SOURCE_DIR/$DOTM_NAME" ]; then
+        cp -f "$SOURCE_DIR/$DOTM_NAME" "$SYS_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+        chmod 644 "$SYS_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    fi
+    if [ -f "$SOURCE_DIR/$DOTM_NAME_OLD" ]; then
+        cp -f "$SOURCE_DIR/$DOTM_NAME_OLD" "$SYS_WORD_STARTUP/$DOTM_NAME_OLD" 2>/dev/null || true
+        chmod 644 "$SYS_WORD_STARTUP/$DOTM_NAME_OLD" 2>/dev/null || true
+    fi
     rm -f "$SYS_WORD_STARTUP/MacTeXMathEditorPlugin.dotm" 2>/dev/null || true
-    chmod 644 "$SYS_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
 fi
 
 # 2. Install for each real user on this Mac
@@ -38,28 +52,40 @@ for user_home in /Users/*; do
     # Target 1: Word Startup folder in Group Containers
     USER_WORD_STARTUP="$user_home/Library/Group Containers/UBF8T346G9.Office/User Content.localized/Startup.localized/Word"
     mkdir -p "$USER_WORD_STARTUP" 2>/dev/null || true
-    cp -f "$SOURCE_DIR/$DOTM_NAME" "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    if [ -f "$SOURCE_DIR/$DOTM_NAME" ]; then
+        cp -f "$SOURCE_DIR/$DOTM_NAME" "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+        chown "$username" "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+        chmod 644 "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+        xattr -d com.apple.quarantine "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
+    fi
+    if [ -f "$SOURCE_DIR/$DOTM_NAME_OLD" ]; then
+        cp -f "$SOURCE_DIR/$DOTM_NAME_OLD" "$USER_WORD_STARTUP/$DOTM_NAME_OLD" 2>/dev/null || true
+        chown "$username" "$USER_WORD_STARTUP/$DOTM_NAME_OLD" 2>/dev/null || true
+        chmod 644 "$USER_WORD_STARTUP/$DOTM_NAME_OLD" 2>/dev/null || true
+        xattr -d com.apple.quarantine "$USER_WORD_STARTUP/$DOTM_NAME_OLD" 2>/dev/null || true
+    fi
     rm -f "$USER_WORD_STARTUP/MacTeXMathEditorPlugin.dotm" 2>/dev/null || true
-    chown "$username" "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
-    chmod 644 "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
-    xattr -d com.apple.quarantine "$USER_WORD_STARTUP/$DOTM_NAME" 2>/dev/null || true
     
     # Target 2: AppleScript sandbox scripts folder
     USER_APP_SCRIPTS="$user_home/Library/Application Scripts/com.microsoft.Word"
     mkdir -p "$USER_APP_SCRIPTS" 2>/dev/null || true
     cp -f "$SOURCE_DIR/$SCPT_NAME" "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     cp -f "$SOURCE_DIR/$SCPT_NAME_KH" "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    cp -f "$SOURCE_DIR/$SCPT_NAME_KH_OLD" "$USER_APP_SCRIPTS/$SCPT_NAME_KH_OLD" 2>/dev/null || true
     cp -f "$SOURCE_DIR/toggle_tex_worker.py" "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
     chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    chown "$username" "$USER_APP_SCRIPTS/$SCPT_NAME_KH_OLD" 2>/dev/null || true
     chown "$username" "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
     chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    chmod 755 "$USER_APP_SCRIPTS/$SCPT_NAME_KH_OLD" 2>/dev/null || true
     chmod 755 "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
     xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME" 2>/dev/null || true
     xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME_KH" 2>/dev/null || true
+    xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/$SCPT_NAME_KH_OLD" 2>/dev/null || true
     xattr -d com.apple.quarantine "$USER_APP_SCRIPTS/toggle_tex_worker.py" 2>/dev/null || true
 done
 
-echo "Mathtype_kh Word Plugin installation completed successfully."
+echo "Mathtype-kh Word Plugin installation completed successfully."
 exit 0

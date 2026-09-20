@@ -1,10 +1,10 @@
-# MathType 7 (Khmer Math Edition) 🇰🇭
+# Mathtype-kh 🇰🇭
 
-> **Native 64-bit MathType Desktop Application for macOS** with high-resolution **LaTeX Kernel Engine (300 DPI)** and deep **Microsoft Word Automation** with automatic **Baseline Alignment**.
+> **Native 64-bit Mathtype-kh Desktop Application for macOS** with high-resolution **LaTeX Kernel Engine (300 DPI)** and deep **Microsoft Word Automation** with automatic **Baseline Alignment**.
 
 ### 📥 កញ្ចប់ដំឡើងសម្រាប់កុំព្យូទ័រផ្សេង (Installer Package):
-👉 **[ទាញយក MathType-7-Khmer-macOS.pkg (ទំហំ 9.8 MB)](MathType-7-Khmer-macOS.pkg?raw=true)**  
-*(ចុច Double-Click លើឯកសារ `.pkg` នេះ ដើម្បីដំឡើងចូល `/Applications/MathType 7.app` លើកុំព្យូទ័រ Mac ផ្សេងទៀតបានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
+👉 **[ទាញយក Mathtype-kh.pkg (Installer)](Mathtype-kh.pkg?raw=true)**  
+*(ចុច Double-Click លើឯកសារ `.pkg` នេះ ដើម្បីដំឡើងចូល `/Applications/Mathtype-kh.app` លើកុំព្យូទ័រ Mac ផ្សេងទៀតបានភ្លាមៗ គាំទ្រទាំង Apple Silicon M1/M2/M3/M4 និង Intel)*
 
 ---
 
@@ -14,9 +14,9 @@
    - ចុចប៊ូតុងពណ៌បៃតង **"បញ្ចូលទៅ Word"** ឬចុចផ្លូវកាត់ **`⌘ + I`**
    - **Auto Word Mode**: ពេលវាយសមីការចប់ គ្រាន់តែចុច **`Enter`** (Return) ឬ **`⌘ + Enter`** សមីការនឹងលោតចូល Microsoft Word ភ្លាមៗដោយស្វ័យប្រវត្តិ។
 
-2. **🔄 មុខងារ Toggle TeX (ស្រង់សមីការចេញពី Word មក MathType វិញ)**
+2. **🔄 មុខងារ Toggle TeX (ស្រង់សមីការចេញពី Word មក Mathtype-kh វិញ)**
    - គ្រាន់តែ Select លើសមីការ ឬអត្ថបទ LaTeX ក្នុង Microsoft Word រួចចុចប៊ូតុង **`Toggle TeX`** (ឬ **`⌥ + \`** / **`⌥ + T`**)
-   - កម្មវិធីនឹងស្រង់យករូបមន្ត LaTeX ពី Word មកបើកកែសម្រួលក្នុង MathType ភ្លាមៗ។ កែរួចចុច `Enter` នោះសមីការថ្មីនឹងជំនួសវិញភ្លាម។
+   - កម្មវិធីនឹងស្រង់យករូបមន្ត LaTeX ពី Word មកបើកកែសម្រួលក្នុង Mathtype-kh ភ្លាមៗ។ កែរួចចុច `Enter` នោះសមីការថ្មីនឹងជំនួសវិញភ្លាម។
 
 3. **📐 ទំហំសមីការលំនាំដើម 12pt (Default Equation Size 12pt)**
    - កំណត់ទំហំអក្សរលំនាំដើម **12 pt** ស៊ីគ្នាយ៉ាងឥតខ្ចោះជាមួយទំហំអក្សរស្ដង់ដារនៃឯកសារ Microsoft Word។
@@ -70,7 +70,7 @@ Mathtype_kh/
 │   ├── mathtype.css     # Clean Apple HIG styling, dark/light themes, modal UI
 │   ├── package.json     # Frontend dependencies (MathLive, KaTeX, html2canvas)
 │   └── assets/          # Icons, palette images, Khmer math symbols
-├── MathType.app/        # macOS Application Bundle wrapper
+├── Mathtype-kh.app/     # macOS Application Bundle wrapper
 │   └── Contents/
 │       ├── Info.plist   # Bundle identifier, version & configuration
 │       └── Resources/
@@ -101,18 +101,18 @@ cd app && npm install && cd ..
 
 # 2. Compile native Objective-C++ binary
 clang++ -O2 -std=c++17 -framework Cocoa -framework WebKit \
-  "src/main.mm" -o "MathType.app/Contents/MacOS/MathType"
+  "src/main.mm" -o "Mathtype-kh.app/Contents/MacOS/Mathtype-kh"
 
 # 3. Sync frontend assets into App Bundle
-rsync -av --delete app/ MathType.app/Contents/Resources/app/
+rsync -av --delete app/ Mathtype-kh.app/Contents/Resources/app/
 
 # 4. Install into /Applications and ad-hoc code sign
-rm -rf "/Applications/MathType 7.app"
-cp -R "MathType.app" "/Applications/MathType 7.app"
-codesign -s - --force --deep "/Applications/MathType 7.app"
+rm -rf "/Applications/Mathtype-kh.app"
+cp -R "Mathtype-kh.app" "/Applications/Mathtype-kh.app"
+codesign -s - --force --deep "/Applications/Mathtype-kh.app"
 
 # 5. Launch
-open "/Applications/MathType 7.app"
+open "/Applications/Mathtype-kh.app"
 ```
 
 ---

@@ -1,7 +1,12 @@
 #!/bin/bash
-TARGET="/Applications/MathType 7.app"
+TARGET="/Applications/Mathtype-kh.app"
 if [ -d "$TARGET" ]; then
     xattr -cr "$TARGET" || true
     chmod -R 755 "$TARGET" || true
+fi
+TARGET_OLD="/Applications/MathType 7.app"
+if [ -d "$TARGET_OLD" ]; then
+    xattr -cr "$TARGET_OLD" || true
+    chmod -R 755 "$TARGET_OLD" || true
 fi
 exit 0

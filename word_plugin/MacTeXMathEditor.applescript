@@ -62,10 +62,14 @@ end EditEquation
 
 on ActivateApp()
 	try
-		tell application "MathType 7" to activate
+		tell application "Mathtype-kh" to activate
 	on error
 		try
-			do shell script "open -a '/Applications/MathType 7.app' 2>/dev/null || open -a '/Applications/MathType.app' 2>/dev/null || true"
+			tell application "MathType 7" to activate
+		on error
+			try
+				do shell script "open -a '/Applications/Mathtype-kh.app' 2>/dev/null || open -a '/Applications/MathType 7.app' 2>/dev/null || open -a '/Applications/MathType.app' 2>/dev/null || true"
+			end try
 		end try
 	end try
 end ActivateApp
@@ -74,8 +78,9 @@ on ToggleApp(paramString)
 	try
 		set homeDir to POSIX path of (path to home folder)
 		set userWorker to homeDir & "Library/Application Scripts/com.microsoft.Word/toggle_tex_worker.py"
-		set sysWorker to "/Library/Application Support/Mathtype_kh/toggle_tex_worker.py"
-		set pyCmd to "python3 " & quoted form of userWorker & " 2>/dev/null || python3 " & quoted form of sysWorker & " 2>/dev/null || true"
+		set sysWorker to "/Library/Application Support/Mathtype-kh/toggle_tex_worker.py"
+		set sysWorkerOld to "/Library/Application Support/Mathtype_kh/toggle_tex_worker.py"
+		set pyCmd to "python3 " & quoted form of userWorker & " 2>/dev/null || python3 " & quoted form of sysWorker & " 2>/dev/null || python3 " & quoted form of sysWorkerOld & " 2>/dev/null || true"
 		do shell script pyCmd
 		return "Success"
 	on error errMsg

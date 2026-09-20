@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Toggle TeX Worker for Mathtype_kh Word Plugin
-Converts every $...$ or $$...$$ in Microsoft Word selection into a MathType Khmer
+Toggle TeX Worker for Mathtype-kh Word Plugin
+Converts every $...$ or $$...$$ in Microsoft Word selection into a Mathtype-kh
 equation image in-place, or converts selected equation images back to TeX text.
-Runs completely in the background without opening or focusing MathType.
+Runs completely in the background without opening or focusing Mathtype-kh.
 """
 
 import os
