@@ -368,6 +368,7 @@
     if (!img) return NO;
     
     NSBitmapImageRep *rep = [[NSBitmapImageRep alloc] initWithCGImage:img];
+    [rep setSize:NSMakeSize(box.size.width, box.size.height)];
     NSData *pngData = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
     CGImageRelease(img);
     if (!pngData) return NO;
@@ -689,13 +690,59 @@
                             NSPasteboard *pb = [NSPasteboard generalPasteboard];
                             [pb clearContents];
 
-                            NSImage *img = [[NSImage alloc] initWithData:pngData];
-                            if (img) [pb writeObjects:@[img]];
-                            [pb setData:pngData forType:NSPasteboardTypePNG];
-                            [pb setData:pngData forType:NSPasteboardTypeTIFF];
+                            // Compute exact point dimensions (matching LaTeX font size / Word inline shape)
+                            NSSize pointSize = NSMakeSize(savedW, savedH);
+                            if (pointSize.width <= 0 || pointSize.height <= 0) {
+                                NSImage *tmp = [[NSImage alloc] initWithData:pngData];
+                                if (tmp) {
+                                    pointSize = NSMakeSize(tmp.size.width * 72.0 / 300.0, tmp.size.height * 72.0 / 300.0);
+                                }
+                            }
+
+                            // 1. Prepare NSBitmapImageRep with exact point size
+                            NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:pngData];
+                            if (rep) {
+                                [rep setSize:pointSize];
+                            }
+
+                            // 2. Prepare NSImage with exact point dimensions (so Word doesn't blow it up)
+                            NSImage *img = [[NSImage alloc] initWithSize:pointSize];
+                            if (rep) {
+                                [img addRepresentation:rep];
+                            } else {
+                                img = [[NSImage alloc] initWithData:pngData];
+                                [img setSize:pointSize];
+                            }
+
+                            // Write Image & File URL objects to pasteboard
+                            if (savedPath && [[NSFileManager defaultManager] fileExistsAtPath:savedPath]) {
+                                [pb writeObjects:@[img, [NSURL fileURLWithPath:savedPath]]];
+                            } else {
+                                [pb writeObjects:@[img]];
+                            }
+
+                            // 3. Write real TIFF data with exact 300 DPI point dimensions
+                            NSData *tiffData = rep ? [rep TIFFRepresentation] : [img TIFFRepresentation];
+                            if (tiffData) {
+                                [pb setData:tiffData forType:NSPasteboardTypeTIFF];
+                            }
+
+                            // 4. Write PNG representation with exact point dimensions
+                            NSData *rescaledPng = rep ? [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}] : pngData;
+                            [pb setData:(rescaledPng ?: pngData) forType:NSPasteboardTypePNG];
+
+                            // 5. Write HTML snippet with exact width, height, vertical alignment, and alt metadata
+                            NSString *base64PNG = [(rescaledPng ?: pngData) base64EncodedStringWithOptions:0];
+                            double actualDepth = pointSize.height * savedRatio;
+                            NSString *htmlSnippet = [NSString stringWithFormat:
+                                @"<img src=\"data:image/png;base64,%@\" width=\"%.2f\" height=\"%.2f\" style=\"vertical-align: -%.2fpt;\" alt=\"ratio:%.4f|latex:%@\">",
+                                base64PNG, pointSize.width, pointSize.height, actualDepth, savedRatio, savedLatex];
+                            [pb setString:htmlSnippet forType:NSPasteboardTypeHTML];
+
+                            // 6. Write plain text LaTeX
                             [pb setString:savedLatex forType:NSPasteboardTypeString];
 
-                            std::cout << "[Clipboard] TeX equation ready on pasteboard." << std::endl;
+                            std::cout << "[Clipboard] TeX equation copied with exact size: " << pointSize.width << "x" << pointSize.height << " pt (ratio: " << savedRatio << ")" << std::endl;
 
                             // If it's insert, run Word AppleScript!
                             if (isInsert) {
