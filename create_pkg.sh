@@ -4,8 +4,12 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
+VERSION="${1:-7.4.4}"
+VERSION="${VERSION#v}"
+TAG="v${VERSION}"
+
 echo "=========================================="
-echo "        Packaging Mathtype-kh"
+echo "        Packaging Mathtype-kh ${TAG}"
 echo "=========================================="
 
 # 1. Compile universal binary (Apple Silicon + Intel)
@@ -33,7 +37,7 @@ pkgbuild --root "packaging/staging" \
          --install-location "/Applications" \
          --scripts "packaging/scripts" \
          --identifier "com.mathtype.kh" \
-         --version "7.4.4" \
+         --version "${VERSION}" \
          "packaging/Mathtype-kh-Component.pkg"
 
 # 5. Build Word Add-in component package for distribution
@@ -41,39 +45,45 @@ echo "📦 Building Word Add-in package component..."
 pkgbuild --root "word_plugin/pkg_build/root" \
          --scripts "word_plugin/pkg_build/scripts" \
          --identifier "com.mathtype.kh.wordplugin" \
-         --version "1.0.0" \
+         --version "${VERSION}" \
          "packaging/Mathtype-kh-WordPlugin.pkg"
 
-# Also produce standalone Word plugin pkg
+# Standalone Word plugin pkg with version
+cp -f "packaging/Mathtype-kh-WordPlugin.pkg" "Mathtype-kh-WordPlugin-${TAG}.pkg"
+cp -f "packaging/Mathtype-kh-WordPlugin.pkg" "word_plugin/Mathtype-kh-${TAG}.pkg"
 cp -f "packaging/Mathtype-kh-WordPlugin.pkg" "word_plugin/Mathtype-kh.pkg"
 
 # 6. Build distribution product package (All-in-One: App + Word Plugin)
-echo "🎁 Building final distribution package (All-in-One)..."
+echo "🎁 Building final distribution package (All-in-One: Mathtype-kh-${TAG}.pkg)..."
 productbuild --distribution "packaging/distribution.xml" \
              --package-path "packaging" \
              --resources "packaging" \
-             "Mathtype-kh.pkg"
+             "Mathtype-kh-${TAG}.pkg"
 
-# 7. Build Uninstaller package (Remove_mathtype_kh.pkg)
+cp -f "Mathtype-kh-${TAG}.pkg" "Mathtype-kh.pkg"
+
+# 7. Build Uninstaller package (Remove_mathtype_kh-${TAG}.pkg)
 echo "🗑️ Building Uninstaller package..."
 mkdir -p packaging/uninstaller/root
 pkgbuild --root "packaging/uninstaller/root" \
          --scripts "packaging/uninstaller/scripts" \
          --identifier "com.mathtype.kh.uninstaller" \
-         --version "1.0.0" \
+         --version "${VERSION}" \
          "packaging/uninstaller/Remove-Mathtype-kh-Component.pkg"
 
 productbuild --distribution "packaging/uninstaller/distribution.xml" \
              --package-path "packaging/uninstaller" \
              --resources "packaging/uninstaller" \
-             "Remove_mathtype_kh.pkg"
+             "Remove_mathtype_kh-${TAG}.pkg"
+
+cp -f "Remove_mathtype_kh-${TAG}.pkg" "Remove_mathtype_kh.pkg"
 
 # Clean up staging
 rm -rf packaging/staging "packaging/Mathtype-kh-Component.pkg" "packaging/Mathtype-kh-WordPlugin.pkg" "packaging/uninstaller/Remove-Mathtype-kh-Component.pkg"
 
 echo "=========================================="
 echo "✅ Packaging Complete!"
-echo "   Output Application Installer: Mathtype-kh.pkg"
-echo "   Output Word Plugin Installer: word_plugin/Mathtype-kh.pkg"
-echo "   Output Uninstaller Package:   Remove_mathtype_kh.pkg"
+echo "   Output Application Installer: Mathtype-kh-${TAG}.pkg & Mathtype-kh.pkg"
+echo "   Output Word Plugin Installer: Mathtype-kh-WordPlugin-${TAG}.pkg & word_plugin/Mathtype-kh-${TAG}.pkg"
+echo "   Output Uninstaller Package:   Remove_mathtype_kh-${TAG}.pkg & Remove_mathtype_kh.pkg"
 echo "=========================================="

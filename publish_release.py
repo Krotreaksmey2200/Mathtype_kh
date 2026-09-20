@@ -50,27 +50,34 @@ def main():
 
 កំណែថ្មី {tag_name} ជាមួយការកែលម្អលើ UX/UI និងការតភ្ជាប់ជាមួយ Microsoft Word យ៉ាងរលូន។
 
-### 🌟 លក្ខណៈពិសេសចម្បង (What's New):
-1. **មុខងារកែប្រែសមីការ (In-Place Equation Editing)**៖
-   - ចុចលើប៊ូតុង «កែប្រែសមីការ» ក្នុង Word នឹងលោតបើក Mathtype-kh ភ្លាមៗ
-   - ផ្ទុកកូដ LaTeX នៃសមីការចាស់មកបង្ហាញក្នុង Editor ដោយស្វ័យប្រវត្តិ
-   - ពេលចុច «បញ្ចូលទៅ Word» (⌘I / Enter) វានឹងលុបសមីការចាស់ចោល និងជំនួសដោយសមីការថ្មីត្រង់ទីតាំងដដែល
-2. **រូបសញ្ញា Ribbon ថ្មី**៖ ប្តូររូបសញ្ញាផ្លូវការ MathType Root ($\\\\sqrt{{}}$) លើ Word Ribbon
-3. **ទំហំ Zoom**៖ កំណត់លំនាំដើម 100%
-4. **ព័ត៌មានអ្នកបង្កើត**៖ បង្ហាញឈ្មោះអ្នកបង្កើត `K.Reaksmey` ក្នុងផ្ទាំង About
-5. **កញ្ចប់ដំឡើង All-in-One PKG**៖ ដំឡើងទាំងកម្មវិធី Mathtype-kh និង Word Plugin ក្នុងពេលតែមួយ
+### 🌟 លក្ខណៈពិសេសចម្បង (What's New in {tag_name}):
+1. **🇰🇭 មុខងារសរសេរអក្សរខ្មែរក្នុងសមីការ (Khmer Text in Math Mode)**៖ ប៊ូតុង «🇰🇭 អក្សរខ្មែរ» ឬចុច `⌘ + ⇧ + T` ដើម្បីសរសេរអក្សរខ្មែរក្នុងរូបមន្ត
+2. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
+3. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
+4. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
+5. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
+6. **🔄 ប្រព័ន្ធត្រួតពិនិត្យកំណែថ្មី (Auto-Update Checker)**៖ ពិនិត្យកំណែថ្មីពី GitHub ក្នុង Menu Help -> Check for Updates...
 
 ---
 
 ### 📦 ឯកសារដំឡើង (Download Installers):
 - **`Mathtype-kh-{tag_name}.pkg`** (All-in-One Installer): កញ្ចប់ដំឡើងរួម ដំឡើងទាំង Mathtype-kh.app និង Word Plugin (ណែនាំ / Recommended)
 - **`Mathtype-kh-WordPlugin-{tag_name}.pkg`** (Word Plugin Standalone): សម្រាប់ដំឡើងតែ Add-in លើ Microsoft Word
-- **`Remove_mathtype_kh.pkg`** (Uninstaller): សម្រាប់លុប និងសម្អាត Mathtype-kh ទាំងអស់ចេញពីម៉ាស៊ីន
+- **`Remove_mathtype_kh-{tag_name}.pkg`** (Uninstaller): សម្រាប់លុប និងសម្អាត Mathtype-kh ទាំងអស់ចេញពីម៉ាស៊ីន
 """
 
     if existing:
         print(f"ℹ️ Release {tag_name} already exists (ID: {existing['id']})")
         release = existing
+        # Update release description
+        patch_payload = {'body': body_text}
+        patch_req = urllib.request.Request(
+            f'https://api.github.com/repos/{repo}/releases/{existing["id"]}',
+            data=json.dumps(patch_payload).encode('utf-8'),
+            headers={**headers, 'Content-Type': 'application/json'},
+            method='PATCH'
+        )
+        urllib.request.urlopen(patch_req)
     else:
         print(f"📦 Creating release {tag_name}...")
         payload = {
@@ -94,8 +101,9 @@ def main():
     upload_base = upload_url_tmpl.split('{')[0]
 
     assets = [
-        ('Mathtype-kh.pkg', f'Mathtype-kh-{tag_name}.pkg', f'Mathtype-kh {tag_name} (All-in-One Installer)'),
-        ('word_plugin/Mathtype-kh.pkg', f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Word Plugin Installer {tag_name} (Standalone)'),
+        (f'Mathtype-kh-{tag_name}.pkg', f'Mathtype-kh-{tag_name}.pkg', f'Mathtype-kh {tag_name} (All-in-One Installer)'),
+        (f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Mathtype-kh-WordPlugin-{tag_name}.pkg', f'Word Plugin Installer {tag_name} (Standalone)'),
+        (f'Remove_mathtype_kh-{tag_name}.pkg', f'Remove_mathtype_kh-{tag_name}.pkg', f'Uninstaller {tag_name}: Completely Remove & Clean Mathtype-kh'),
         ('Remove_mathtype_kh.pkg', 'Remove_mathtype_kh.pkg', 'Uninstaller: Completely Remove & Clean Mathtype-kh')
     ]
 
