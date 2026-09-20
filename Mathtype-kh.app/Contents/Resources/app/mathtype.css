@@ -375,32 +375,43 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
-  min-height: 38px;
+  padding: 4px 8px;
+  min-height: 42px;
   background: #ffffff;
   overflow-x: auto;
 }
 
 .expr-btn {
-  background: #f7fafc;
+  background: #ffffff;
   border: 1px solid #ccd3da;
-  border-radius: 3px;
-  padding: 2px 8px;
-  height: 28px;
-  font-size: 13px;
-  font-family: "Times New Roman", serif;
+  border-radius: 4px;
+  padding: 3px 10px;
+  min-height: 32px;
+  height: auto;
+  font-size: 13.5px;
   color: #111;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.1s;
+  transition: all 0.12s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .expr-btn:hover {
-  background: #ebf3fc;
-  border-color: #79a6d2;
+  background: #f0f7ff;
+  border-color: #3b82f6;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.15);
+}
+
+.expr-btn .katex {
+  font-size: 13.5px;
+  line-height: 1.2;
+}
+
+.popup-item .katex {
+  font-size: 14px;
 }
 
 /* ==========================================================================

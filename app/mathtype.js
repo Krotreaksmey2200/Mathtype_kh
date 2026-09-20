@@ -540,7 +540,19 @@ function togglePalettePopup(btn, pal) {
     div.title = item.desc;
 
     const span = document.createElement("span");
-    span.innerText = item.label;
+    if (window.katex && item.latex) {
+      try {
+        const previewLatex = item.latex.replace(/#\?/g, "\\square");
+        span.innerHTML = katex.renderToString(previewLatex, {
+          displayMode: false,
+          throwOnError: false
+        });
+      } catch (e) {
+        span.innerText = item.label;
+      }
+    } else {
+      span.innerText = item.label;
+    }
     div.appendChild(span);
 
     div.addEventListener("click", (e) => {
@@ -579,8 +591,21 @@ function switchTab(category) {
   items.forEach(item => {
     const btn = document.createElement("button");
     btn.className = "expr-btn";
-    btn.innerText = item.label;
     btn.title = item.desc;
+
+    // Render as real mathematical equation using KaTeX
+    if (window.katex && item.latex) {
+      try {
+        btn.innerHTML = katex.renderToString(item.latex, {
+          displayMode: false,
+          throwOnError: false
+        });
+      } catch (e) {
+        btn.innerText = item.label;
+      }
+    } else {
+      btn.innerText = item.label;
+    }
 
     btn.addEventListener("click", () => {
       insertLatex(item.latex);
