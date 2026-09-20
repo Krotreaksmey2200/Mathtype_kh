@@ -116,61 +116,94 @@ on ToggleApp(paramString)
 	end try
 end ToggleApp
 
-on AlignSelection()
-	try
-		tell application "Microsoft Word"
-			set selObj to selection
-			set selText to text object of selObj
-			set pCount to count of inline shapes of selText
-			set alignedCount to 0
-			repeat with i from 1 to pCount
-				set pic to inline shape i of selText
-				set altText to alternative text of pic
+on AlignSingleShape(pic)
+	tell application "Microsoft Word"
+		try
+			set altText to alternative text of pic
+			if altText contains "ratio:" or altText contains "latex:" then
+				set rVal to 0.22
 				if altText contains "ratio:" then
 					set AppleScript's text item delimiters to "ratio:"
 					set p1 to text item 2 of altText
 					set AppleScript's text item delimiters to "|"
 					set rStr to text item 1 of p1
 					set AppleScript's text item delimiters to ""
-					set rVal to (run script rStr)
-					set h to height of pic
-					set actualDepth to h * rVal
-					set font position of font object of (text object of pic) to -actualDepth
-					set alignedCount to alignedCount + 1
+					try
+						set rVal to (rStr as real)
+					on error
+						set rVal to 0.22
+					end try
 				end if
+				
+				-- Smart upgrade for equations created when ratio defaulted to 0.22
+				if rVal <= 0.23 then
+					if altText contains "cases" or altText contains "matrix" or altText contains "aligned" or altText contains "\\\\" then
+						set rVal to 0.4185
+					else if altText contains "int" then
+						set rVal to 0.39
+					else if altText contains "frac" then
+						set rVal to 0.30
+					end if
+				end if
+				
+				set h to height of pic
+				set actualDepth to h * rVal
+				set font position of font object of (text object of pic) to -actualDepth
+				return true
+			end if
+		on error
+			return false
+		end try
+		return false
+	end tell
+end AlignSingleShape
+
+on AlignSelection(paramString)
+	try
+		tell application "Microsoft Word"
+			set selObj to selection
+			set sPos to start of content of (text object of selObj)
+			set ePos to end of content of (text object of selObj)
+			if sPos is equal to ePos then
+				set sPos to sPos - 1
+				set ePos to ePos + 1
+			end if
+			
+			set allShapes to inline shapes of active document
+			set alignedCount to 0
+			repeat with i from 1 to (count of allShapes)
+				set pic to item i of allShapes
+				try
+					set picPos to start of content of (text object of pic)
+					if picPos >= sPos and picPos <= ePos then
+						if my AlignSingleShape(pic) then
+							set alignedCount to alignedCount + 1
+						end if
+					end if
+				end try
 			end repeat
-			return "Aligned " & alignedCount & " equation(s)"
+			return "Aligned " & alignedCount & " equation(s) in selection"
 		end tell
 	on error errMsg
 		return "Error: " & errMsg
 	end try
 end AlignSelection
 
-on AlignDocument()
+on AlignDocument(paramString)
 	try
 		tell application "Microsoft Word"
-			set activeDoc to active document
-			set pCount to count of inline shapes of activeDoc
+			set allShapes to inline shapes of active document
 			set alignedCount to 0
-			repeat with i from 1 to pCount
-				set pic to inline shape i of activeDoc
-				set altText to alternative text of pic
-				if altText contains "ratio:" then
-					set AppleScript's text item delimiters to "ratio:"
-					set p1 to text item 2 of altText
-					set AppleScript's text item delimiters to "|"
-					set rStr to text item 1 of p1
-					set AppleScript's text item delimiters to ""
-					set rVal to (run script rStr)
-					set h to height of pic
-					set actualDepth to h * rVal
-					set font position of font object of (text object of pic) to -actualDepth
+			repeat with i from 1 to (count of allShapes)
+				set pic to item i of allShapes
+				if my AlignSingleShape(pic) then
 					set alignedCount to alignedCount + 1
 				end if
 			end repeat
-			return "Aligned " & alignedCount & " equation(s)"
+			return "Aligned " & alignedCount & " equation(s) in document"
 		end tell
 	on error errMsg
 		return "Error: " & errMsg
 	end try
 end AlignDocument
+

@@ -119,11 +119,17 @@ def compile_latex(formula, font_size=12.0):
     }}
 }}
 """
+            is_display = trimmed.startswith(r"\begin{align") or trimmed.startswith(r"\begin{equation") or trimmed.startswith(r"\[")
+            if is_display:
+                measure_code = rf"\setbox0=\vbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unvbox0"
+            else:
+                measure_code = rf"\setbox0=\hbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unhbox0"
+
             tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
 {xe_preamble}
 \begin{{document}}
 \fontsize{{{font_size}pt}}{{{font_size * 1.25}pt}}\selectfont
-{body}
+{measure_code}
 \end{{document}}
 """
             with open(tex_path, "w", encoding="utf-8") as f:
@@ -150,7 +156,7 @@ def compile_latex(formula, font_size=12.0):
             app_bin = "/Applications/Mathtype-kh.app/Contents/MacOS/Mathtype-kh"
             if os.path.exists(app_bin):
                 subprocess.run([app_bin, "--render-pdf", pdf_path, png_path, "300"],
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             elif os.path.exists("/opt/homebrew/bin/pdftoppm"):
                 out_base = os.path.join(temp_dir, "eq_ppm")
                 subprocess.run(["/opt/homebrew/bin/pdftoppm", "-png", "-r", "300", pdf_path, out_base],
@@ -173,11 +179,17 @@ def compile_latex(formula, font_size=12.0):
                 except Exception:
                     pass
 
+            is_display = trimmed.startswith(r"\begin{align") or trimmed.startswith(r"\begin{equation") or trimmed.startswith(r"\[")
+            if is_display:
+                measure_code = rf"\setbox0=\vbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unvbox0"
+            else:
+                measure_code = rf"\setbox0=\hbox{{{body}}}%\n\typeout{{MATHTYPE_DEPTH:\the\dp0;TOTAL_HEIGHT:\the\dimexpr\ht0+\dp0\relax}}%\n\unhbox0"
+
             tex_code = rf"""\documentclass[preview,border=0pt]{{standalone}}
 {preamble}
 \begin{{document}}
 \fontsize{{{font_size}pt}}{{{font_size * 1.25}pt}}\selectfont
-{body}
+{measure_code}
 \end{{document}}
 """
             with open(tex_path, "w", encoding="utf-8") as f:
@@ -198,6 +210,20 @@ def compile_latex(formula, font_size=12.0):
             # 3. Run dvisvgm to get exact depth
             subprocess.run([os.path.join(tex_bin, "dvisvgm"), "--no-styles", "--no-fonts", "--exact-bbox", "eq.dvi", "-o", "eq.svg"],
                            cwd=temp_dir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        # Parse exact depth from TeX log if available
+        log_path = os.path.join(temp_dir, "eq.log")
+        if os.path.exists(log_path):
+            with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                log_content = f.read()
+            m_log = re.search(r"MATHTYPE_DEPTH:([-\d.]+)pt;TOTAL_HEIGHT:([-\d.]+)pt", log_content)
+            if m_log:
+                p_depth = float(m_log.group(1))
+                p_tot = float(m_log.group(2))
+                if p_tot > 0 and p_depth >= 0:
+                    depth = p_depth
+                    ratio = p_depth / p_tot
+
         if os.path.exists(svg_path):
             with open(svg_path, "r", encoding="utf-8", errors="ignore") as f:
                 svg = f.read()
@@ -206,9 +232,25 @@ def compile_latex(formula, font_size=12.0):
                 min_y = float(m.group(2))
                 width = float(m.group(3))
                 height = float(m.group(4))
-                depth = min_y + height
-                if height > 0:
-                    ratio = depth / height
+                if ratio <= 0.0 or ratio > 0.85:
+                    eff_min_y = (min_y + 72.0) if use_xelatex else min_y
+                    depth = eff_min_y + height
+                    if height > 0:
+                        cand_ratio = depth / height
+                        if 0.0 <= cand_ratio <= 0.85:
+                            ratio = cand_ratio
+
+        # Smart fallback if needed
+        if ratio <= 0.0 or ratio > 0.85:
+            if any(k in formula for k in ["cases", "matrix", "aligned", r"\\"]):
+                ratio = 0.4185
+            elif "int" in formula:
+                ratio = 0.39
+            elif "frac" in formula:
+                ratio = 0.30
+            else:
+                ratio = 0.22
+            depth = height * ratio
                     
         # 4. Copy PNG to Word Sandbox tmp folder
         home = os.path.expanduser("~")

@@ -472,13 +472,18 @@
                 @"}\n", xePreamble];
         }
 
+        BOOL isDisplayMode = [trimmed hasPrefix:@"\\begin{align"] || [trimmed hasPrefix:@"\\begin{equation"] || [trimmed hasPrefix:@"\\["];
+        NSString *measuredBody = isDisplayMode ?
+            [NSString stringWithFormat:@"\\setbox0=\\vbox{%@}%%\n\\typeout{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}%%\n\\unvbox0", bodyContent] :
+            [NSString stringWithFormat:@"\\setbox0=\\hbox{%@}%%\n\\typeout{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}%%\n\\unhbox0", bodyContent];
+
         NSString *texSource = [NSString stringWithFormat:
             @"\\documentclass[preview,border=0pt]{standalone}\n"
             @"%@\n"
             @"\\begin{document}\n"
             @"\\fontsize{%.1fpt}{%.1fpt}\\selectfont\n"
             @"%@\n"
-            @"\\end{document}\n", xePreamble, fontSize, baselineSkip, bodyContent];
+            @"\\end{document}\n", xePreamble, fontSize, baselineSkip, measuredBody];
 
         [texSource writeToFile:texFile atomically:YES encoding:NSUTF8StringEncoding error:nil];
 
@@ -539,13 +544,18 @@
             preamble = [NSString stringWithFormat:@"\\usepackage{lmodern}\n%@", preamble];
         }
 
+        BOOL isDisplayMode = [trimmed hasPrefix:@"\\begin{align"] || [trimmed hasPrefix:@"\\begin{equation"] || [trimmed hasPrefix:@"\\["];
+        NSString *measuredBody = isDisplayMode ?
+            [NSString stringWithFormat:@"\\setbox0=\\vbox{%@}%%\n\\typeout{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}%%\n\\unvbox0", bodyContent] :
+            [NSString stringWithFormat:@"\\setbox0=\\hbox{%@}%%\n\\typeout{MATHTYPE_DEPTH:\\the\\dp0;TOTAL_HEIGHT:\\the\\dimexpr\\ht0+\\dp0\\relax}%%\n\\unhbox0", bodyContent];
+
         NSString *texSource = [NSString stringWithFormat:
             @"\\documentclass[preview,border=0pt]{standalone}\n"
             @"%@\n"
             @"\\begin{document}\n"
             @"\\fontsize{%.1fpt}{%.1fpt}\\selectfont\n"
             @"%@\n"
-            @"\\end{document}\n", preamble, fontSize, baselineSkip, bodyContent];
+            @"\\end{document}\n", preamble, fontSize, baselineSkip, measuredBody];
 
         [texSource writeToFile:texFile atomically:YES encoding:NSUTF8StringEncoding error:nil];
 
@@ -601,6 +611,25 @@
         }
     }
 
+    // Parse exact depth and total height directly from TeX log output
+    NSString *logFile = [tempDir stringByAppendingPathComponent:@"equation.log"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:logFile]) {
+        NSString *logContent = [NSString stringWithContentsOfFile:logFile encoding:NSUTF8StringEncoding error:nil];
+        if (logContent) {
+            NSRegularExpression *logRegex = [NSRegularExpression regularExpressionWithPattern:@"MATHTYPE_DEPTH:([-\\d.]+)pt;TOTAL_HEIGHT:([-\\d.]+)pt" options:0 error:nil];
+            NSTextCheckingResult *logMatch = [logRegex firstMatchInString:logContent options:0 range:NSMakeRange(0, [logContent length])];
+            if (logMatch && logMatch.numberOfRanges >= 3) {
+                double parsedDepth = [[logContent substringWithRange:[logMatch rangeAtIndex:1]] doubleValue];
+                double parsedTotalH = [[logContent substringWithRange:[logMatch rangeAtIndex:2]] doubleValue];
+                if (parsedTotalH > 0 && parsedDepth >= 0) {
+                    result.depth = parsedDepth;
+                    result.ratio = parsedDepth / parsedTotalH;
+                    std::cout << "[TeX Engine] Exact baseline from TeX log: depth=" << parsedDepth << "pt, totalH=" << parsedTotalH << "pt, ratio=" << result.ratio << std::endl;
+                }
+            }
+        }
+    }
+
     // Extract SVG bounding box & baseline depth
     if ([[NSFileManager defaultManager] fileExistsAtPath:svgFile]) {
         result.svgPath = svgFile;
@@ -611,19 +640,33 @@
             double minY = [[svgContent substringWithRange:[match rangeAtIndex:2]] doubleValue];
             double w = [[svgContent substringWithRange:[match rangeAtIndex:3]] doubleValue];
             double h = [[svgContent substringWithRange:[match rangeAtIndex:4]] doubleValue];
-            double depth = minY + h;
             result.width = w;
             result.height = h;
-            result.depth = depth;
-            if (h > 0) {
-                double rawRatio = depth / h;
-                if (rawRatio >= 0.0 && rawRatio <= 0.85) {
-                    result.ratio = rawRatio;
-                } else {
-                    result.ratio = 0.22;
+            if (result.ratio <= 0.0 || result.ratio > 0.85) {
+                double effectiveMinY = useXeLaTeX ? (minY + 72.0) : minY;
+                double depth = effectiveMinY + h;
+                result.depth = depth;
+                if (h > 0) {
+                    double rawRatio = depth / h;
+                    if (rawRatio >= 0.0 && rawRatio <= 0.85) {
+                        result.ratio = rawRatio;
+                    }
                 }
             }
-            std::cout << "[TeX Engine] Exact Bounding Box: width=" << w << "pt, height=" << h << "pt, depth=" << depth << "pt, ratio=" << result.ratio << std::endl;
+            std::cout << "[TeX Engine] SVG Bounding Box: width=" << w << "pt, height=" << h << "pt, depth=" << result.depth << "pt, ratio=" << result.ratio << std::endl;
+        }
+    }
+
+    // Smart fallback if ratio is still not calculated
+    if (result.ratio <= 0.0 || result.ratio > 0.85) {
+        if ([latex containsString:@"cases"] || [latex containsString:@"matrix"] || [latex containsString:@"aligned"] || [latex containsString:@"\\\\"]) {
+            result.ratio = 0.4185;
+        } else if ([latex containsString:@"int"]) {
+            result.ratio = 0.39;
+        } else if ([latex containsString:@"frac"]) {
+            result.ratio = 0.30;
+        } else {
+            result.ratio = 0.22;
         }
     }
 
