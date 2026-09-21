@@ -51,18 +51,26 @@ def main():
 កំណែថ្មី {tag_name} ជាមួយការកែលម្អលើ UX/UI និងការតភ្ជាប់ជាមួយ Microsoft Word យ៉ាងរលូន។
 
 ### 🌟 លក្ខណៈពិសេសចម្បង (What's New in {tag_name}):
-1. **🇰🇭 មុខងារសរសេរអក្សរខ្មែរក្នុងសមីការ (Khmer Text in Math Mode)**៖ ប៊ូតុង «🇰🇭 អក្សរខ្មែរ» ឬចុច `⌘ + ⇧ + T` ដើម្បីសរសេរអក្សរខ្មែរក្នុងរូបមន្ត
-2. **🌐 Pure English Localization**៖ មុខងារប្ដូរភាសាទៅអង់គ្លេសសុទ្ធ 100% លើ Menu Help, Edit, Size, Style, Modals, Tooltips និង Palettes
-3. **🎯 ប៊ូតុងទាំង ៥ លើ MS Word (Word Ribbon Suite Integration)**៖
+1. **🎨 មុខងារកំណត់ប្ដូរពណ៌សមីការ (Equation Color Customization)**៖
+   - ម៉ឺនុយ **«ពណ៌ (Color)»** លើ Menu Bar ជាមួយ Shortcuts (`⌘0` ដល់ `⌘6` និង `⌘K`)
+   - ប៊ូតុង **«Color / ពណ៌»** លើ Action Bar ជាមួយ Color Indicator Dot និង Palette ពណ៌ស្រស់ស្អាតទាំង ៨
+   - គាំទ្រ **Custom Color Picker** សម្រាប់ជ្រើសរើសកូដពណ៌តាមចិត្ត
+   - គាំទ្រទាំងការប្ដូរពណ៌សមីការទាំងមូល និងប្ដូរពណ៌តែផ្នែកដែលបាន Highlight (Selection-level styling)
+   - រក្សាគុណភាពពណ៌កម្រិតខ្ពស់ **300 DPI** ពេលបញ្ចូលទៅកាន់ Microsoft Word, Vector SVG និង Vector PDF
+2. **🚀 ប្រព័ន្ធធ្វើបច្ចុប្បន្នភាពស្វ័យប្រវត្តិក្នងកម្មវិធី (In-App Seamless Auto-Update)**៖
+   - ធ្វើបច្ចុប្បន្នភាពបានភ្លាមៗ 1-Click Update ផ្ទាល់ក្នុងកម្មវិធី ដោយមិនចាំបាច់បើក Browser ឬដំឡើងសារជាថ្មីដោយដៃ
+   - ផ្ទាំងស្ថានភាព Update ទំនើបជាមួយ Progress Bar ច្បាស់លាស់ ស្អាត និងគ្មានពាក្យ "GitHub"
+3. **🇰🇭 មុខងារសរសេរអក្សរខ្មែរក្នុងសមីការ (Khmer Text in Math Mode)**៖ ប៊ូតុង «🇰🇭 អក្សរខ្មែរ» ឬចុច `⌘ + ⇧ + T` ដើម្បីសរសេរអក្សរខ្មែរក្នុងរូបមន្ត
+4. **🌐 Pure English Localization**៖ មុខងារប្ដូរភាសាទៅអង់គ្លេសសុទ្ធ 100% លើ Menu Help, Edit, Size, Style, Modals, Tooltips និង Palettes
+5. **🎯 ប៊ូតុងទាំង ៥ លើ MS Word (Word Ribbon Suite Integration)**៖
    - បើក Mathtype-kh ភ្លាមៗពី MS Word
    - កែប្រែសមីការ (Edit Selected Equation) ស្រង់សមីការដែលបានជ្រើសក្នុង Word ទៅកែក្នុង Mathtype-kh ដោយផ្ទាល់
    - Toggle TeX ($...$) បំប្លែងរវាងអក្សរ TeX និងរូបភាពសមីការ (Smart Paragraph Detection)
    - Align Selection & Align Document តម្រឹមបន្ទាត់កណ្តាលសមីការ (Mathematical Baseline) ដោយស្វ័យប្រវត្តិកម្រិតខ្ពស់សម្រាប់ `cases`, `matrix`, `aligned`, `int`, និង `frac`
-4. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
-5. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
-6. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
-7. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
-8. **🔄 ប្រព័ន្ធត្រួតពិនិត្យកំណែថ្មី (Auto-Update Checker)**៖ ពិនិត្យកំណែថ្មីពី GitHub ក្នុង Menu Help -> Check for Updates...
+6. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
+7. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
+8. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
+9. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
 
 ---
 
