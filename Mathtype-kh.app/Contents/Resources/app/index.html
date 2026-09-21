@@ -82,6 +82,20 @@
             <div class="dropdown-row" onclick="setEquationSize(36)"><span class="item-name">36 pt</span></div>
           </div>
         </div>
+        <div class="menu-item" data-menu="color">
+          <span class="menu-label" id="menuColor">Color</span>
+          <div class="menu-dropdown">
+            <div class="dropdown-row active-check" id="colorMenuBlack" onclick="applyEquationColor('black')"><span class="item-name" id="menuColorBlack">✓ Black (Default)</span></div>
+            <div class="dropdown-row" id="colorMenuBlue" onclick="applyEquationColor('#2563eb')"><span class="item-name" id="menuColorBlue"><span class="color-swatch-menu" style="background:#2563eb;"></span> Blue</span></div>
+            <div class="dropdown-row" id="colorMenuRed" onclick="applyEquationColor('#dc2626')"><span class="item-name" id="menuColorRed"><span class="color-swatch-menu" style="background:#dc2626;"></span> Red</span></div>
+            <div class="dropdown-row" id="colorMenuGreen" onclick="applyEquationColor('#16a34a')"><span class="item-name" id="menuColorGreen"><span class="color-swatch-menu" style="background:#16a34a;"></span> Green</span></div>
+            <div class="dropdown-row" id="colorMenuOrange" onclick="applyEquationColor('#ea580c')"><span class="item-name" id="menuColorOrange"><span class="color-swatch-menu" style="background:#ea580c;"></span> Orange</span></div>
+            <div class="dropdown-row" id="colorMenuPurple" onclick="applyEquationColor('#9333ea')"><span class="item-name" id="menuColorPurple"><span class="color-swatch-menu" style="background:#9333ea;"></span> Purple</span></div>
+            <div class="dropdown-row" id="colorMenuTeal" onclick="applyEquationColor('#0891b2')"><span class="item-name" id="menuColorTeal"><span class="color-swatch-menu" style="background:#0891b2;"></span> Teal</span></div>
+            <div class="dropdown-separator"></div>
+            <div class="dropdown-row" onclick="openCustomColorPicker()"><span class="item-name" id="menuColorCustom">🎨 Other Color...</span></div>
+          </div>
+        </div>
         <div class="menu-item" data-menu="help">
           <span class="menu-label" id="menuHelp">Help</span>
           <div class="menu-dropdown">
@@ -175,6 +189,35 @@
           <button class="action-btn khmer-text-btn" onclick="insertKhmerText()" id="btnKhmerText" title="បញ្ចូលអក្សរខ្មែរក្នុងសមីការ (⌘⇧T)">
             <span id="labelKhmerText">🇰🇭 អក្សរខ្មែរ</span>
           </button>
+
+          <!-- Color Picker Button with Dropdown Popover -->
+          <div class="color-picker-wrapper">
+            <button class="action-btn color-btn" onclick="toggleColorPopover(event)" id="btnColorPicker" title="ប្ដូរពណ៌សមីការ (ឬផ្នែកដែលបានជ្រើសរើស)">
+              <span class="color-indicator-dot" id="colorIndicatorDot"></span>
+              <span id="labelColorPicker">ពណ៌</span>
+              <svg class="color-btn-caret" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="color-popover hidden" id="colorPopover">
+              <div class="color-popover-header">
+                <span id="colorPopoverHeading">ជ្រើសរើសពណ៌សមីការ</span>
+              </div>
+              <div class="color-swatches-grid">
+                <button class="color-swatch active" data-color="black" style="background: #1e293b;" onclick="applyEquationColor('black')" title="Black / ខ្មៅ"></button>
+                <button class="color-swatch" data-color="#2563eb" style="background: #2563eb;" onclick="applyEquationColor('#2563eb')" title="Blue / ខៀវ"></button>
+                <button class="color-swatch" data-color="#dc2626" style="background: #dc2626;" onclick="applyEquationColor('#dc2626')" title="Red / ក្រហម"></button>
+                <button class="color-swatch" data-color="#16a34a" style="background: #16a34a;" onclick="applyEquationColor('#16a34a')" title="Green / បៃតង"></button>
+                <button class="color-swatch" data-color="#ea580c" style="background: #ea580c;" onclick="applyEquationColor('#ea580c')" title="Orange / ទឹកក្រូច"></button>
+                <button class="color-swatch" data-color="#9333ea" style="background: #9333ea;" onclick="applyEquationColor('#9333ea')" title="Purple / ស្វាយ"></button>
+                <button class="color-swatch" data-color="#0891b2" style="background: #0891b2;" onclick="applyEquationColor('#0891b2')" title="Teal / ផ្ទៃមេឃ"></button>
+                <button class="color-swatch" data-color="#db2777" style="background: #db2777;" onclick="applyEquationColor('#db2777')" title="Pink / ផ្កាឈូក"></button>
+              </div>
+              <div class="color-popover-divider"></div>
+              <label class="color-custom-row">
+                <span id="labelCustomColor">ពណ៌ផ្ទាល់ខ្លួន...</span>
+                <input type="color" id="nativeColorInput" value="#2563eb" onchange="onCustomColorPicked(this.value)" />
+              </label>
+            </div>
+          </div>
 
           <!-- History Button -->
           <button class="action-btn secondary-btn" onclick="openHistoryModal()" id="btnHistory" title="ប្រវត្តិសមីការដែលបានវាយកន្លងមក">

@@ -19,7 +19,7 @@ echo "⚙️ Compiling native Cocoa/WebKit binary (src/main.mm)..."
 mkdir -p "Mathtype-kh.app/Contents/MacOS"
 mkdir -p "Mathtype-kh.app/Contents/Resources"
 
-clang++ -O2 -std=c++17 -framework Cocoa -framework WebKit \
+clang++ -O2 -std=c++17 -arch arm64 -arch x86_64 -framework Cocoa -framework WebKit \
     "src/main.mm" -o "Mathtype-kh.app/Contents/MacOS/Mathtype-kh"
 
 # 3. Synchronize frontend bundle into App

@@ -57,6 +57,17 @@ const i18n = {
     menuStyleGreek: "អក្សរក្រិក (Greek)",
     menuSize: "ទំហំ",
     sizeDefault: "✓ 12 pt (លំនាំដើម)",
+    menuColor: "ពណ៌ (Color)",
+    menuColorBlack: "✓ ខ្មៅ (លំនាំដើម)",
+    menuColorBlue: "ខៀវ",
+    menuColorRed: "ក្រហម",
+    menuColorGreen: "បៃតង",
+    menuColorOrange: "ទឹកក្រូច",
+    menuColorPurple: "ស្វាយ",
+    menuColorTeal: "ផ្ទៃមេឃ",
+    menuColorCustom: "🎨 ពណ៌ផ្សេងទៀត...",
+    colorPopoverHeading: "ជ្រើសរើសពណ៌សមីការ",
+    labelCustomColor: "ពណ៌ផ្ទាល់ខ្លួន...",
     menuHelp: "ជំនួយ",
     menuHelpGuide: "មគ្គុទ្ទេសក៍ផ្លូវកាត់ក្តារចុច...",
     menuLatexConfig: "⚙️ កំណត់ផ្លូវ LaTeX Path...",
@@ -71,6 +82,7 @@ const i18n = {
     labelHistory: "ប្រវត្តិ",
     labelFavorites: "សំណព្វ",
     labelKhmerText: "🇰🇭 អក្សរខ្មែរ",
+    labelColorPicker: "ពណ៌",
     tabChem: "🧪 គីមីវិទ្យា",
 
     tipInsertWord: "បញ្ចូលសមីការទៅកាន់ Microsoft Word ផ្ទាល់ដោយស្វ័យប្រវត្តិ (⌘I ឬ Enter)",
@@ -78,6 +90,7 @@ const i18n = {
     tipToggleTeX: "ទាញយកសមីការដែលបានជ្រើសរើសពី Microsoft Word មកកែក្នុង MathType (⌥\\)",
     tipOpenWord: "បើកកម្មវិធី Microsoft Word",
     tipKhmerText: "បញ្ចូលអក្សរខ្មែរក្នុងសមីការ (⌘⇧T)",
+    tipColorPicker: "ប្ដូរពណ៌សមីការ (ឬផ្នែកដែលបានជ្រើសរើស)",
     tipHistory: "ប្រវត្តិសមីការដែលបានវាយកន្លងមក",
     tipFavorites: "រូបមន្តសំណព្វ (Favorites)",
     tipCopyWord: "ចម្លងរូបមន្តទុកសម្រាប់បិទ (⌘V) ក្នុង Word",
@@ -124,6 +137,17 @@ const i18n = {
     menuStyleGreek: "Greek",
     menuSize: "Size",
     sizeDefault: "✓ 12 pt (Default)",
+    menuColor: "Color",
+    menuColorBlack: "✓ Black (Default)",
+    menuColorBlue: "Blue",
+    menuColorRed: "Red",
+    menuColorGreen: "Green",
+    menuColorOrange: "Orange",
+    menuColorPurple: "Purple",
+    menuColorTeal: "Teal",
+    menuColorCustom: "🎨 Other Color...",
+    colorPopoverHeading: "Select Equation Color",
+    labelCustomColor: "Custom Color...",
     menuHelp: "Help",
     menuHelpGuide: "Keyboard Shortcuts Guide...",
     menuLatexConfig: "⚙️ Configure LaTeX Path...",
@@ -137,8 +161,9 @@ const i18n = {
     labelClear: "Clear",
     labelHistory: "History",
     labelFavorites: "Favorites",
+    labelColorPicker: "Color",
+    tipColorPicker: "Change equation color (or selected part)",
     tabChem: "🧪 Chemistry",
-    menuCheckUpdates: "🔄 Check for Updates...",
     statusReady: "Ready",
     statusInserted: "✓ Successfully inserted equation into Microsoft Word!",
     statusCopied: "✓ Copied equation! Now press ⌘V in Word.",
@@ -601,6 +626,25 @@ function applyLanguage() {
   setEl("menuSize", dict.menuSize);
   setEl("sizeMenu12Label", dict.sizeDefault);
 
+  // Color Menu
+  setEl("menuColor", dict.menuColor);
+  setEl("menuColorBlack", dict.menuColorBlack);
+  const updateMenuColor = (id, text, hex) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = `<span class="color-swatch-menu" style="background:${hex};"></span> ${text}`;
+    }
+  };
+  updateMenuColor("menuColorBlue", dict.menuColorBlue, "#2563eb");
+  updateMenuColor("menuColorRed", dict.menuColorRed, "#dc2626");
+  updateMenuColor("menuColorGreen", dict.menuColorGreen, "#16a34a");
+  updateMenuColor("menuColorOrange", dict.menuColorOrange, "#ea580c");
+  updateMenuColor("menuColorPurple", dict.menuColorPurple, "#9333ea");
+  updateMenuColor("menuColorTeal", dict.menuColorTeal, "#0891b2");
+  setEl("menuColorCustom", dict.menuColorCustom);
+  setEl("colorPopoverHeading", dict.colorPopoverHeading);
+  setEl("labelCustomColor", dict.labelCustomColor);
+
   // Help Menu
   setEl("menuHelp", dict.menuHelp);
   setEl("menuHelpGuide", dict.menuHelpGuide);
@@ -617,6 +661,7 @@ function applyLanguage() {
   setEl("labelHistory", dict.labelHistory);
   setEl("labelFavorites", dict.labelFavorites);
   setEl("labelKhmerText", dict.labelKhmerText);
+  setEl("labelColorPicker", dict.labelColorPicker);
   setEl("tabChem", dict.tabChem);
   setEl("statusMessage", dict.statusReady);
 
@@ -630,6 +675,7 @@ function applyLanguage() {
   setTitle("btnToggleTeX", dict.tipToggleTeX);
   setTitle("btnOpenWord", dict.tipOpenWord);
   setTitle("btnKhmerText", dict.tipKhmerText);
+  setTitle("btnColorPicker", dict.tipColorPicker);
   setTitle("btnHistory", dict.tipHistory);
   setTitle("btnFavorites", dict.tipFavorites);
   setTitle("btnCopyWord", dict.tipCopyWord);
@@ -856,6 +902,9 @@ function setupGlobalEvents() {
     if (!e.target.closest("#palettePopup") && !e.target.closest(".palette-btn")) {
       closePopup();
     }
+    if (!e.target.closest(".color-picker-wrapper")) {
+      closeColorPopover();
+    }
   });
 
   const canvasWrapper = document.getElementById("canvasWrapper");
@@ -888,6 +937,102 @@ function setupGlobalEvents() {
 
 let currentEquationSize = 12;
 let isAutoWord = true;
+let currentEquationColor = 'black';
+
+function toggleColorPopover(e) {
+  if (e) e.stopPropagation();
+  const popover = document.getElementById("colorPopover");
+  if (popover) {
+    popover.classList.toggle("hidden");
+  }
+}
+
+function closeColorPopover() {
+  const popover = document.getElementById("colorPopover");
+  if (popover) {
+    popover.classList.add("hidden");
+  }
+}
+
+function openCustomColorPicker() {
+  const input = document.getElementById("nativeColorInput");
+  if (input) {
+    input.click();
+  }
+}
+
+function onCustomColorPicked(hex) {
+  if (!hex) return;
+  applyEquationColor(hex, true);
+}
+
+function applyEquationColor(colorHex, isCustom = false) {
+  const isDefault = (colorHex === 'black' || colorHex === 'default' || colorHex === '#000000' || colorHex === '#1e293b');
+  const targetColor = isDefault ? 'black' : colorHex;
+
+  if (mf) {
+    // If part of equation is selected: apply style to that selection only!
+    if (!mf.selectionIsCollapsed) {
+      mf.applyStyle({ color: isDefault ? 'none' : targetColor });
+      showStatus(currentLang === 'km' ? "✓ បានប្ដូរពណ៌ផ្នែកដែលបានជ្រើសរើស!" : "✓ Color applied to selection!", true);
+    } else {
+      // If nothing selected:
+      const val = (mf.getValue("latex") || mf.getValue() || "").trim();
+      if (val !== "") {
+        mf.executeCommand("selectAll");
+        mf.applyStyle({ color: isDefault ? 'none' : targetColor });
+        mf.executeCommand("moveToMathfieldEnd");
+      } else {
+        mf.applyStyle({ color: isDefault ? 'none' : targetColor });
+      }
+      currentEquationColor = targetColor;
+      mf.style.color = isDefault ? '' : targetColor;
+      showStatus(currentLang === 'km' ? "✓ បានកំណត់ពណ៌សមីការ!" : "✓ Equation color applied!", true);
+    }
+  }
+
+  currentEquationColor = targetColor;
+
+  // 1. Update Color Indicator Dot on action button
+  const dot = document.getElementById("colorIndicatorDot");
+  if (dot) {
+    dot.style.backgroundColor = isDefault ? '#1e293b' : targetColor;
+  }
+
+  // 2. Update popover swatches active state
+  document.querySelectorAll(".color-swatch").forEach(sw => {
+    const swColor = sw.dataset.color;
+    if (swColor === targetColor || (isDefault && swColor === 'black')) {
+      sw.classList.add("active");
+    } else {
+      sw.classList.remove("active");
+    }
+  });
+
+  // 3. Update top Menu checkmarks
+  const menuMap = {
+    'black': 'colorMenuBlack',
+    '#2563eb': 'colorMenuBlue',
+    '#dc2626': 'colorMenuRed',
+    '#16a34a': 'colorMenuGreen',
+    '#ea580c': 'colorMenuOrange',
+    '#9333ea': 'colorMenuPurple',
+    '#0891b2': 'colorMenuTeal'
+  };
+
+  Object.values(menuMap).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("active-check");
+  });
+
+  if (menuMap[targetColor]) {
+    const activeEl = document.getElementById(menuMap[targetColor]);
+    if (activeEl) activeEl.classList.add("active-check");
+  }
+
+  closeColorPopover();
+  if (mf) mf.focus();
+}
 
 function setEquationSize(size) {
   currentEquationSize = parseFloat(size) || 12;
@@ -1025,6 +1170,9 @@ async function generateEquationImageDataUrl() {
   tempDiv.style.padding = "14px 20px";
   tempDiv.style.fontSize = "32px";
   tempDiv.style.background = "transparent";
+  if (currentEquationColor && currentEquationColor !== 'black' && currentEquationColor !== 'default') {
+    tempDiv.style.color = currentEquationColor;
+  }
   document.body.appendChild(tempDiv);
 
   if (window.katex) {
@@ -1119,6 +1267,7 @@ async function actionInsertIntoWord() {
         type: "compileAndInsertWord",
         latex: latex,
         fontSize: currentEquationSize,
+        equationColor: currentEquationColor,
         fallbackData: null,
         ratio: ratio
       });
@@ -1152,6 +1301,7 @@ async function actionCopyPNG() {
         type: "compileAndCopyWord",
         latex: latex,
         fontSize: currentEquationSize,
+        equationColor: currentEquationColor,
         fallbackData: null,
         ratio: ratio
       });
@@ -2078,7 +2228,8 @@ async function actionSaveSVG() {
       window.webkit.messageHandlers.nativeApp.postMessage({
         type: "saveSVG",
         latex: latex,
-        fontSize: currentEquationSize
+        fontSize: currentEquationSize,
+        equationColor: currentEquationColor
       });
     } else {
       let svgMarkup = "";
@@ -2114,7 +2265,8 @@ async function actionSavePDF() {
       window.webkit.messageHandlers.nativeApp.postMessage({
         type: "savePDF",
         latex: latex,
-        fontSize: currentEquationSize
+        fontSize: currentEquationSize,
+        equationColor: currentEquationColor
       });
     } else {
       window.print();
@@ -2125,7 +2277,7 @@ async function actionSavePDF() {
 }
 
 /**
- * 4. GitHub Releases Auto-Update Checker
+ * 4. Auto-Update Checker
  */
 async function actionCheckUpdates() {
   const title = document.getElementById("modalTitle");
@@ -2138,7 +2290,7 @@ async function actionCheckUpdates() {
   title.innerText = currentLang === 'km' ? "🔄 ពិនិត្យមើលកំណែថ្មី" : "🔄 Check for Updates";
   body.innerHTML = `
     <div style="text-align: center; padding: 25px;">
-      <p style="font-size: 14px; color: #3b82f6;">⚡ ${currentLang === 'km' ? "កំពុងពិនិត្យកំណែថ្មីពី GitHub..." : "Checking for updates from GitHub..."}</p>
+      <p style="font-size: 14px; color: #3b82f6;">⚡ ${currentLang === 'km' ? "កំពុងពិនិត្យមើលកំណែថ្មី..." : "Checking for updates..."}</p>
     </div>
   `;
   footer.innerHTML = `<button class="action-btn" onclick="closeModal()">Cancel</button>`;
@@ -2194,7 +2346,7 @@ async function actionCheckUpdates() {
         <div style="text-align: center; padding: 25px;">
           <div style="font-size: 36px; margin-bottom: 8px;">✓</div>
           <h3 style="color: #107c41; font-size: 16px; margin-bottom: 6px;">${currentLang === 'km' ? "លោកអ្នកកំពុងប្រើប្រាស់កំណែថ្មីចុងក្រោយបង្អស់!" : "You are up to date!"}</h3>
-          <p style="font-size: 13px; color: #64748b;">Mathtype-kh v${currentVersion} ${currentLang === 'km' ? "ជាកំណែចុងក្រោយបំផុតលើ GitHub រួចរាល់ហើយ។" : "is the latest version available."}</p>
+          <p style="font-size: 13px; color: #64748b;">Mathtype-kh v${currentVersion} ${currentLang === 'km' ? "ជាកំណែចុងក្រោយបំផុតរួចរាល់ហើយ។" : "is the latest version available."}</p>
         </div>
       `;
       footer.innerHTML = `<button class="action-btn insert-word-action" onclick="closeModal()">OK</button>`;
@@ -2202,7 +2354,7 @@ async function actionCheckUpdates() {
   } catch (err) {
     body.innerHTML = `
       <div style="text-align: center; padding: 20px; color: #64748b;">
-        <p style="color: #ef4444; font-size: 14px; margin-bottom: 6px;">⚠️ ${currentLang === 'km' ? "មិនអាចតភ្ជាប់ទៅកាន់ GitHub បានទេ" : "Could not connect to GitHub"}</p>
+        <p style="color: #ef4444; font-size: 14px; margin-bottom: 6px;">⚠️ ${currentLang === 'km' ? "មិនអាចពិនិត្យមើលកំណែថ្មីបានទេ" : "Could not check for updates"}</p>
         <p style="font-size: 12px;">${err.message}</p>
       </div>
     `;

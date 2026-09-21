@@ -53,6 +53,7 @@
 @property (copy, nonatomic) NSString *targetUpdateVersion;
 @property (copy, nonatomic) NSString *targetDownloadURL;
 - (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize;
+- (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize equationColor:(NSString *)equationColor;
 + (BOOL)renderPDF:(NSString *)pdfPath toPNG:(NSString *)pngPath dpi:(double)dpi;
 - (void)insertEquationIntoWord:(TeXResult *)texRes latex:(NSString *)latex;
 - (void)handleToggleTeX;
@@ -120,6 +121,21 @@
     [editMenu addItemWithTitle:@"Favorites..." action:@selector(favoritesMenu:) keyEquivalent:@""];
     [editMenuItem setSubmenu:editMenu];
     [mainMenu addItem:editMenuItem];
+
+    // Color Menu
+    NSMenuItem *colorMenuItem = [[NSMenuItem alloc] init];
+    NSMenu *colorMenu = [[NSMenu alloc] initWithTitle:@"Color"];
+    [colorMenu addItemWithTitle:@"Black (Default)" action:@selector(setColorBlack:) keyEquivalent:@"0"];
+    [colorMenu addItemWithTitle:@"Blue" action:@selector(setColorBlue:) keyEquivalent:@"1"];
+    [colorMenu addItemWithTitle:@"Red" action:@selector(setColorRed:) keyEquivalent:@"2"];
+    [colorMenu addItemWithTitle:@"Green" action:@selector(setColorGreen:) keyEquivalent:@"3"];
+    [colorMenu addItemWithTitle:@"Orange" action:@selector(setColorOrange:) keyEquivalent:@"4"];
+    [colorMenu addItemWithTitle:@"Purple" action:@selector(setColorPurple:) keyEquivalent:@"5"];
+    [colorMenu addItemWithTitle:@"Teal" action:@selector(setColorTeal:) keyEquivalent:@"6"];
+    [colorMenu addItem:[NSMenuItem separatorItem]];
+    [colorMenu addItemWithTitle:@"Custom Color..." action:@selector(setColorCustom:) keyEquivalent:@"k"];
+    [colorMenuItem setSubmenu:colorMenu];
+    [mainMenu addItem:colorMenuItem];
 
     // Help Menu
     NSMenuItem *helpMenuItem = [[NSMenuItem alloc] init];
@@ -384,6 +400,10 @@
 }
 
 - (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize {
+    return [self compileWithLaTeXKernel:latex fontSize:fontSize equationColor:nil];
+}
+
+- (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize equationColor:(NSString *)equationColor {
     TeXResult *result = [[TeXResult alloc] init];
     if (fontSize <= 0) fontSize = 12.0;
 
@@ -415,6 +435,26 @@
     NSString *texFile = [tempDir stringByAppendingPathComponent:@"equation.tex"];
 
     NSString *trimmed = [latex stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+    // 1. Convert any hex colors \textcolor{#RRGGBB} or \color{#RRGGBB} to LaTeX xcolor \textcolor[HTML]{RRGGBB}
+    NSRegularExpression *hexColorRegex = [NSRegularExpression regularExpressionWithPattern:@"\\\\(textcolor|color)\\{#([0-9a-fA-F]{6})\\}" options:0 error:nil];
+    if (hexColorRegex) {
+        trimmed = [hexColorRegex stringByReplacingMatchesInString:trimmed options:0 range:NSMakeRange(0, [trimmed length]) withTemplate:@"\\\\$1[HTML]{$2}"];
+    }
+
+    // 2. If equationColor is specified and not default/black, wrap or prepend color
+    if (equationColor && equationColor.length > 0 &&
+        ![equationColor isEqualToString:@"black"] && ![equationColor isEqualToString:@"default"] &&
+        ![equationColor isEqualToString:@"#000000"] && ![equationColor isEqualToString:@"#1e293b"]) {
+        NSString *cleanColor = equationColor;
+        if ([cleanColor hasPrefix:@"#"]) {
+            cleanColor = [cleanColor substringFromIndex:1];
+            trimmed = [NSString stringWithFormat:@"\\color[HTML]{%@} %@", cleanColor, trimmed];
+        } else {
+            trimmed = [NSString stringWithFormat:@"\\color{%@} %@", cleanColor, trimmed];
+        }
+    }
+
     NSString *bodyContent = @"";
     if ([trimmed hasPrefix:@"\\begin{align"] || [trimmed hasPrefix:@"\\begin{equation"] || [trimmed hasPrefix:@"\\["]) {
         bodyContent = trimmed;
@@ -749,12 +789,13 @@
         NSString *rawLatex = body[@"latex"] ? [NSString stringWithFormat:@"%@", body[@"latex"]] : @"x=0";
         double fontSize = body[@"fontSize"] ? [body[@"fontSize"] doubleValue] : 14.0;
         if (fontSize <= 0) fontSize = 14.0;
+        NSString *eqColor = body[@"equationColor"] ? [NSString stringWithFormat:@"%@", body[@"equationColor"]] : nil;
         NSString *fallbackData = body[@"fallbackData"] ? [NSString stringWithFormat:@"%@", body[@"fallbackData"]] : nil;
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             @try {
-                // 1. Compile with local TeX Live / MacTeX LaTeX Kernel at requested font size!
-                TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize];
+                // 1. Compile with local TeX Live / MacTeX LaTeX Kernel at requested font size and color!
+                TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize equationColor:eqColor];
                 
                 // Fallback if TeX kernel failed
                 NSData *pngData = nil;
@@ -923,9 +964,10 @@
         NSString *rawLatex = body[@"latex"] ? [NSString stringWithFormat:@"%@", body[@"latex"]] : @"";
         double fontSize = body[@"fontSize"] ? [body[@"fontSize"] doubleValue] : 14.0;
         if (fontSize <= 0) fontSize = 14.0;
+        NSString *eqColor = body[@"equationColor"] ? [NSString stringWithFormat:@"%@", body[@"equationColor"]] : nil;
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize];
+            TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize equationColor:eqColor];
             if (texRes.svgPath && [[NSFileManager defaultManager] fileExistsAtPath:texRes.svgPath]) {
                 NSData *svgData = [NSData dataWithContentsOfFile:texRes.svgPath];
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -950,9 +992,10 @@
         NSString *rawLatex = body[@"latex"] ? [NSString stringWithFormat:@"%@", body[@"latex"]] : @"";
         double fontSize = body[@"fontSize"] ? [body[@"fontSize"] doubleValue] : 14.0;
         if (fontSize <= 0) fontSize = 14.0;
+        NSString *eqColor = body[@"equationColor"] ? [NSString stringWithFormat:@"%@", body[@"equationColor"]] : nil;
         
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-            TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize];
+            TeXResult *texRes = [self compileWithLaTeXKernel:rawLatex fontSize:fontSize equationColor:eqColor];
             if (texRes.pdfPath && [[NSFileManager defaultManager] fileExistsAtPath:texRes.pdfPath]) {
                 NSData *pdfData = [NSData dataWithContentsOfFile:texRes.pdfPath];
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -1418,6 +1461,38 @@
 
 - (void)showLaTeXPreambleConfig:(id)sender {
     [self.webView evaluateJavaScript:@"showLaTeXPreambleModal()" completionHandler:nil];
+}
+
+- (void)setColorBlack:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('black')" completionHandler:nil];
+}
+
+- (void)setColorBlue:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('#2563eb')" completionHandler:nil];
+}
+
+- (void)setColorRed:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('#dc2626')" completionHandler:nil];
+}
+
+- (void)setColorGreen:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('#16a34a')" completionHandler:nil];
+}
+
+- (void)setColorOrange:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('#ea580c')" completionHandler:nil];
+}
+
+- (void)setColorPurple:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('#9333ea')" completionHandler:nil];
+}
+
+- (void)setColorTeal:(id)sender {
+    [self.webView evaluateJavaScript:@"applyEquationColor('#0891b2')" completionHandler:nil];
+}
+
+- (void)setColorCustom:(id)sender {
+    [self.webView evaluateJavaScript:@"openCustomColorPicker()" completionHandler:nil];
 }
 
 - (NSString *)currentTeXPreamble {
