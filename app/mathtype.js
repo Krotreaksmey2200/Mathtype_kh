@@ -6,11 +6,25 @@
 let mf = null;
 let currentActivePalette = null;
 let currentZoom = 1.0;
-let currentLang = 'km'; // 'km' or 'en'
+let currentLang = localStorage.getItem("mathtype_lang") || 'km'; // 'km' or 'en'
+
+function cleanEnglishText(str) {
+  if (!str) return "";
+  return str.replace(/\s*\([^)]*[\u1780-\u17FF][^)]*\)/gu, "").trim();
+}
+
+function getLocalizedDesc(str) {
+  if (!str) return "";
+  if (currentLang === 'en') {
+    return cleanEnglishText(str);
+  }
+  return str;
+}
 
 // Language dictionaries
 const i18n = {
   km: {
+    langBtn: "🇰🇭 ខ្មែរ",
     menuFile: "ឯកសារ",
     menuNew: "បង្កើតសមីការថ្មី",
     menuInsertWord: "បញ្ចូលទៅ Word",
@@ -21,24 +35,63 @@ const i18n = {
     menuPrint: "បោះពុម្ព...",
     menuClose: "បិទផ្ទាំង",
     menuEdit: "កែប្រែ",
+    menuUndo: "មិនធ្វើវិញ",
+    menuRedo: "ធ្វើវិញ",
+    menuCut: "កាត់",
     menuCopyWord: "ចម្លងទៅ Word",
+    menuCopyLaTeX: "ចម្លងជា LaTeX",
+    menuPaste: "បិទភ្ជាប់",
+    menuSelectAll: "ជ្រើសរើសទាំងអស់",
+    menuToggleTeX: "Toggle TeX (ពី Word មក Mathtype-kh)",
     menuView: "បង្ហាញ",
+    menuZoom100: "Zoom 100% (ស្តង់ដារ)",
+    menuZoom150: "Zoom 150%",
+    menuZoom200: "Zoom 200%",
+    menuZoom300: "Zoom 300%",
+    menuToggleTabs: "បង្ហាញ/លាក់របាររូបមន្ត Tab",
     menuStyle: "រចនាបថ",
+    menuStyleMath: "✓ គណិតវិទ្យា (Math Automatic)",
+    menuStyleText: "អត្ថបទ (Text)",
+    menuStyleFunc: "អនុគមន៍ (Function)",
+    menuStyleVar: "អថេរ (Variable)",
+    menuStyleGreek: "អក្សរក្រិក (Greek)",
+    menuSize: "ទំហំ",
+    sizeDefault: "✓ 12 pt (លំនាំដើម)",
     menuHelp: "ជំនួយ",
+    menuHelpGuide: "មគ្គុទ្ទេសក៍ផ្លូវកាត់ក្តារចុច...",
+    menuLatexConfig: "⚙️ កំណត់ផ្លូវ LaTeX Path...",
+    menuLatexPreamble: "📜 កំណត់ LaTeX Preamble...",
+    menuCheckUpdates: "🔄 ពិនិត្យមើលកំណែថ្មី...",
+    menuAbout: "អំពី Mathtype-kh...",
+
     labelOpenWord: "បើក Word",
     labelInsertWord: "បញ្ចូលទៅ Word",
     labelCopyWord: "ចម្លង",
     labelClear: "សម្អាត",
     labelHistory: "ប្រវត្តិ",
     labelFavorites: "សំណព្វ",
+    labelKhmerText: "🇰🇭 អក្សរខ្មែរ",
     tabChem: "🧪 គីមីវិទ្យា",
-    menuCheckUpdates: "🔄 ពិនិត្យមើលកំណែថ្មី...",
+
+    tipInsertWord: "បញ្ចូលសមីការទៅកាន់ Microsoft Word ផ្ទាល់ដោយស្វ័យប្រវត្តិ (⌘I ឬ Enter)",
+    tipAutoWord: "ពេលចុច Enter វានឹងលោតចូល Word ដោយស្វ័យប្រវត្តិ",
+    tipToggleTeX: "ទាញយកសមីការដែលបានជ្រើសរើសពី Microsoft Word មកកែក្នុង MathType (⌥\\)",
+    tipOpenWord: "បើកកម្មវិធី Microsoft Word",
+    tipKhmerText: "បញ្ចូលអក្សរខ្មែរក្នុងសមីការ (⌘⇧T)",
+    tipHistory: "ប្រវត្តិសមីការដែលបានវាយកន្លងមក",
+    tipFavorites: "រូបមន្តសំណព្វ (Favorites)",
+    tipCopyWord: "ចម្លងរូបមន្តទុកសម្រាប់បិទ (⌘V) ក្នុង Word",
+    tipSaveSVG: "រក្សាទុកជារូបភាព Vector SVG",
+    tipSavePDF: "រក្សាទុកជាឯកសារ Vector PDF",
+    tipCopyLaTeX: "ចម្លងកូដ LaTeX",
+    tipClear: "សម្អាតផ្ទាំងសមីការ",
+
     statusReady: "ត្រៀមរួចរាល់",
     statusInserted: "✓ បានបញ្ចូលសមីការទៅកាន់ Word ដោយជោគជ័យ!",
-    statusCopied: "✓ បានចម្លងរូបមន្តរួចរាល់! អាចចុច ⌘V ក្នុង Word",
-    langBtn: "🇰🇭 ខ្មែរ"
+    statusCopied: "✓ បានចម្លងរូបមន្តរួចរាល់! អាចចុច ⌘V ក្នុង Word"
   },
   en: {
+    langBtn: "🇺🇸 English",
     menuFile: "File",
     menuNew: "New Equation",
     menuInsertWord: "Insert into Word",
@@ -49,10 +102,35 @@ const i18n = {
     menuPrint: "Print...",
     menuClose: "Close Window",
     menuEdit: "Edit",
+    menuUndo: "Undo",
+    menuRedo: "Redo",
+    menuCut: "Cut",
     menuCopyWord: "Copy to Word",
+    menuCopyLaTeX: "Copy as LaTeX",
+    menuPaste: "Paste",
+    menuSelectAll: "Select All",
+    menuToggleTeX: "Toggle TeX (from Word)",
     menuView: "View",
+    menuZoom100: "Zoom 100% (Standard)",
+    menuZoom150: "Zoom 150%",
+    menuZoom200: "Zoom 200%",
+    menuZoom300: "Zoom 300%",
+    menuToggleTabs: "Toggle Tabbed Expressions Bar",
     menuStyle: "Style",
+    menuStyleMath: "✓ Math (Automatic)",
+    menuStyleText: "Text",
+    menuStyleFunc: "Function",
+    menuStyleVar: "Variable",
+    menuStyleGreek: "Greek",
+    menuSize: "Size",
+    sizeDefault: "✓ 12 pt (Default)",
     menuHelp: "Help",
+    menuHelpGuide: "Keyboard Shortcuts Guide...",
+    menuLatexConfig: "⚙️ Configure LaTeX Path...",
+    menuLatexPreamble: "📜 Configure LaTeX Preamble...",
+    menuCheckUpdates: "🔄 Check for Updates...",
+    menuAbout: "About Mathtype-kh...",
+
     labelOpenWord: "Open Word",
     labelInsertWord: "Insert into Word",
     labelCopyWord: "Copy",
@@ -466,42 +544,114 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function toggleLanguage() {
   currentLang = currentLang === 'km' ? 'en' : 'km';
+  localStorage.setItem("mathtype_lang", currentLang);
   applyLanguage();
 }
 
 function applyLanguage() {
   const dict = i18n[currentLang];
-  document.getElementById("langToggleBtn").innerText = dict.langBtn;
-  document.getElementById("menuFile").innerText = dict.menuFile;
-  document.getElementById("menuNew").innerText = dict.menuNew;
-  document.getElementById("menuInsertWord").innerText = dict.menuInsertWord;
-  document.getElementById("menuSavePNG").innerText = dict.menuSavePNG;
-  const svgMenu = document.getElementById("menuSaveSVG");
-  if (svgMenu) svgMenu.innerText = dict.menuSaveSVG;
-  const pdfMenu = document.getElementById("menuSavePDF");
-  if (pdfMenu) pdfMenu.innerText = dict.menuSavePDF;
-  document.getElementById("menuSaveLaTeX").innerText = dict.menuSaveLaTeX;
-  document.getElementById("menuPrint").innerText = dict.menuPrint;
-  document.getElementById("menuClose").innerText = dict.menuClose;
-  document.getElementById("menuEdit").innerText = dict.menuEdit;
-  document.getElementById("menuCopyWord").innerText = dict.menuCopyWord;
-  document.getElementById("menuView").innerText = dict.menuView;
-  document.getElementById("menuStyle").innerText = dict.menuStyle;
-  document.getElementById("menuHelp").innerText = dict.menuHelp;
-  const checkUpdMenu = document.getElementById("menuCheckUpdates");
-  if (checkUpdMenu) checkUpdMenu.innerText = dict.menuCheckUpdates;
 
-  document.getElementById("labelOpenWord").innerText = dict.labelOpenWord;
-  document.getElementById("labelInsertWord").innerText = dict.labelInsertWord;
-  document.getElementById("labelCopyWord").innerText = dict.labelCopyWord;
-  document.getElementById("labelClear").innerText = dict.labelClear;
-  const lblHist = document.getElementById("labelHistory");
-  if (lblHist) lblHist.innerText = dict.labelHistory;
-  const lblFav = document.getElementById("labelFavorites");
-  if (lblFav) lblFav.innerText = dict.labelFavorites;
-  const tabCh = document.getElementById("tabChem");
-  if (tabCh) tabCh.innerText = dict.tabChem;
-  document.getElementById("statusMessage").innerText = dict.statusReady;
+  const setEl = (id, text) => {
+    const el = document.getElementById(id);
+    if (el && text !== undefined) el.innerText = text;
+  };
+
+  // Switch button
+  setEl("langToggleBtn", dict.langBtn);
+
+  // File Menu
+  setEl("menuFile", dict.menuFile);
+  setEl("menuNew", dict.menuNew);
+  setEl("menuInsertWord", dict.menuInsertWord);
+  setEl("menuSavePNG", dict.menuSavePNG);
+  setEl("menuSaveSVG", dict.menuSaveSVG);
+  setEl("menuSavePDF", dict.menuSavePDF);
+  setEl("menuSaveLaTeX", dict.menuSaveLaTeX);
+  setEl("menuPrint", dict.menuPrint);
+  setEl("menuClose", dict.menuClose);
+
+  // Edit Menu
+  setEl("menuEdit", dict.menuEdit);
+  setEl("menuUndo", dict.menuUndo);
+  setEl("menuRedo", dict.menuRedo);
+  setEl("menuCut", dict.menuCut);
+  setEl("menuCopyWord", dict.menuCopyWord);
+  setEl("menuCopyLaTeX", dict.menuCopyLaTeX);
+  setEl("menuPaste", dict.menuPaste);
+  setEl("menuSelectAll", dict.menuSelectAll);
+  setEl("menuToggleTeX", dict.menuToggleTeX);
+
+  // View Menu
+  setEl("menuView", dict.menuView);
+  setEl("menuZoom100", dict.menuZoom100);
+  setEl("menuZoom150", dict.menuZoom150);
+  setEl("menuZoom200", dict.menuZoom200);
+  setEl("menuZoom300", dict.menuZoom300);
+  setEl("menuToggleTabs", dict.menuToggleTabs);
+
+  // Style Menu
+  setEl("menuStyle", dict.menuStyle);
+  setEl("menuStyleMath", dict.menuStyleMath);
+  setEl("menuStyleText", dict.menuStyleText);
+  setEl("menuStyleFunc", dict.menuStyleFunc);
+  setEl("menuStyleVar", dict.menuStyleVar);
+  setEl("menuStyleGreek", dict.menuStyleGreek);
+
+  // Size Menu
+  setEl("menuSize", dict.menuSize);
+  setEl("sizeMenu12Label", dict.sizeDefault);
+
+  // Help Menu
+  setEl("menuHelp", dict.menuHelp);
+  setEl("menuHelpGuide", dict.menuHelpGuide);
+  setEl("menuLatexConfig", dict.menuLatexConfig);
+  setEl("menuLatexPreamble", dict.menuLatexPreamble);
+  setEl("menuCheckUpdates", dict.menuCheckUpdates);
+  setEl("menuAbout", dict.menuAbout);
+
+  // Bottom action bar labels
+  setEl("labelOpenWord", dict.labelOpenWord);
+  setEl("labelInsertWord", dict.labelInsertWord);
+  setEl("labelCopyWord", dict.labelCopyWord);
+  setEl("labelClear", dict.labelClear);
+  setEl("labelHistory", dict.labelHistory);
+  setEl("labelFavorites", dict.labelFavorites);
+  setEl("labelKhmerText", dict.labelKhmerText);
+  setEl("tabChem", dict.tabChem);
+  setEl("statusMessage", dict.statusReady);
+
+  // Tooltips (title attributes)
+  const setTitle = (id, tip) => {
+    const el = document.getElementById(id);
+    if (el && tip !== undefined) el.title = tip;
+  };
+  setTitle("btnInsertWord", dict.tipInsertWord);
+  setTitle("pillAutoWord", dict.tipAutoWord);
+  setTitle("btnToggleTeX", dict.tipToggleTeX);
+  setTitle("btnOpenWord", dict.tipOpenWord);
+  setTitle("btnKhmerText", dict.tipKhmerText);
+  setTitle("btnHistory", dict.tipHistory);
+  setTitle("btnFavorites", dict.tipFavorites);
+  setTitle("btnCopyWord", dict.tipCopyWord);
+  setTitle("btnSaveSVG", dict.tipSaveSVG);
+  setTitle("btnSavePDF", dict.tipSavePDF);
+  setTitle("btnCopyLaTeX", dict.tipCopyLaTeX);
+  setTitle("btnClear", dict.tipClear);
+
+  // Re-update palette button titles and hover tooltips
+  document.querySelectorAll(".palette-btn").forEach(btn => {
+    const palId = btn.dataset.paletteId;
+    const pal = [...SYMBOL_PALETTES, ...TEMPLATE_PALETTES].find(p => p.id === palId);
+    if (pal) {
+      btn.title = getLocalizedDesc(pal.title);
+    }
+  });
+
+  // Re-render currently active tab expressions with localized tooltips
+  const activeTabBtn = document.querySelector(".tab-btn.active");
+  if (activeTabBtn) {
+    switchTab(activeTabBtn.dataset.tab);
+  }
 }
 
 function renderPalettes() {
@@ -524,14 +674,14 @@ function renderPalettes() {
 function createPaletteButton(pal, type) {
   const btn = document.createElement("button");
   btn.className = "palette-btn";
-  btn.title = pal.title;
+  btn.title = getLocalizedDesc(pal.title);
   btn.dataset.paletteId = pal.id;
   btn.dataset.type = type;
 
   const iconPath = `./assets/icons/${pal.iconImg}`;
   const img = document.createElement("img");
   img.src = iconPath;
-  img.alt = pal.title;
+  img.alt = getLocalizedDesc(pal.title);
   img.onerror = () => {
     img.remove();
     const span = document.createElement("span");
@@ -551,7 +701,7 @@ function createPaletteButton(pal, type) {
     togglePalettePopup(btn, pal);
   });
 
-  btn.addEventListener("mouseenter", () => showStatus(pal.title));
+  btn.addEventListener("mouseenter", () => showStatus(getLocalizedDesc(pal.title)));
   btn.addEventListener("mouseleave", () => showStatus(i18n[currentLang].statusReady));
 
   return btn;
@@ -628,7 +778,7 @@ function togglePalettePopup(btn, pal) {
   pal.items.forEach(item => {
     const div = document.createElement("div");
     div.className = "popup-item";
-    div.title = item.desc;
+    div.title = getLocalizedDesc(item.desc);
 
     const span = document.createElement("span");
     span.innerHTML = renderMathPreview(item.latex, item.label);
@@ -641,8 +791,8 @@ function togglePalettePopup(btn, pal) {
       mf.focus();
     });
 
-    div.addEventListener("mouseenter", () => showStatus(item.desc));
-    div.addEventListener("mouseleave", () => showStatus(pal.title));
+    div.addEventListener("mouseenter", () => showStatus(getLocalizedDesc(item.desc)));
+    div.addEventListener("mouseleave", () => showStatus(getLocalizedDesc(pal.title)));
 
     grid.appendChild(div);
   });
@@ -675,7 +825,7 @@ function switchTab(category) {
   items.forEach(item => {
     const btn = document.createElement("button");
     btn.className = "expr-btn";
-    btn.title = item.desc;
+    btn.title = getLocalizedDesc(item.desc);
 
     // Render as real mathematical equation using KaTeX
     btn.innerHTML = renderMathPreview(item.latex, item.label);
@@ -685,7 +835,7 @@ function switchTab(category) {
       mf.focus();
     });
 
-    btn.addEventListener("mouseenter", () => showStatus(item.desc));
+    btn.addEventListener("mouseenter", () => showStatus(getLocalizedDesc(item.desc)));
     btn.addEventListener("mouseleave", () => showStatus(i18n[currentLang].statusReady));
 
     container.appendChild(btn);
@@ -1148,27 +1298,28 @@ function showAboutModal() {
   if (footer) {
     footer.innerHTML = '<button class="action-btn insert-word-action" style="padding: 0 20px;" onclick="closeModal()">OK</button>';
   }
-  title.innerText = currentLang === 'km' ? "អំពី Mathtype-kh" : "About Mathtype-kh";
+  const isKm = currentLang === 'km';
+  title.innerText = isKm ? "អំពី Mathtype-kh" : "About Mathtype-kh";
   body.innerHTML = `
     <div style="text-align: center; margin-bottom: 16px;">
       <img src="./assets/icons/MT_ICO.png" width="56" height="56" style="margin-bottom: 8px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);">
       <h2 style="font-size: 18px; margin: 0; color: #111; font-weight: 700;">Mathtype-kh</h2>
-      <p style="font-size: 13.5px; color: #107c41; font-weight: 600; margin: 5px 0 0 0;">👨‍💻 អ្នកធ្វើ (Author): K.Reaksmey</p>
-      <p style="font-size: 11.5px; color: #64748b; margin: 4px 0 0 0;">Version 7.4.4 (Native 64-bit Khmer Edition)</p>
+      <p style="font-size: 13.5px; color: #107c41; font-weight: 600; margin: 5px 0 0 0;">👨‍💻 ${isKm ? "អ្នកបង្កើត៖" : "Author:"} K.Reaksmey</p>
+      <p style="font-size: 11.5px; color: #64748b; margin: 4px 0 0 0;">Version 7.4.5 (Native 64-bit Edition)</p>
     </div>
     <p style="font-size: 12.5px; line-height: 1.6; color: #334155; margin: 0 0 10px 0;">
-      ${currentLang === 'km' 
+      ${isKm 
         ? "កម្មវិធី <b>Mathtype-kh</b> ត្រូវបានបង្កើត និងអភិវឌ្ឍដោយ <b>K.Reaksmey</b> សម្រាប់សម្រួលដល់ការសរសេរសមីការគណិតវិទ្យា វិទ្យាសាស្ត្រ និងការបញ្ចូលរូបមន្តទៅក្នុង Microsoft Word ដោយស្វ័យប្រវត្តិតាមរយៈប្រព័ន្ធកូដកម្រិតខ្ពស់ និងតម្រឹមបន្ទាត់យ៉ាងស្រស់ស្អាត។" 
         : "<b>Mathtype-kh</b> is developed by <b>K.Reaksmey</b> for fast and intuitive mathematical equation editing with automated 1-click Microsoft Word integration and baseline alignment."}
     </p>
     <ul style="margin: 10px 0 12px 20px; font-size: 12px; color: #475569; line-height: 1.8;">
-      <li><b>កំណែប្រែ (Version)៖</b> <span style="color: #2563eb; font-weight: 600;">v7.4.4</span></li>
-      <li><b>អ្នកធ្វើ (Author / Creator)៖</b> <span style="color: #107c41; font-weight: 600;">K.Reaksmey</span></li>
-      <li><b>ភាសាសរសេរ (Core):</b> C++ & Objective-C (Apple Cocoa / AppKit)</li>
-      <li><b>ប្រព័ន្ធគណនា (Engine):</b> High-Resolution TeX Engine (300 DPI)</li>
-      <li><b>ការបញ្ចូល Word:</b> 1-Click Auto Insert into Word (⌘I / Enter)</li>
-      <li><b>តម្រឹមបន្ទាត់ (Baseline Alignment):</b> ស្វ័យប្រវត្តិ (Depth Ratio)</li>
-      <li><b>ភាសាគាំទ្រ (Languages):</b> ភាសាខ្មែរ 🇰🇭 & English 🇺🇸</li>
+      <li><b>${isKm ? "កំណែប្រែ៖" : "Version:"}</b> <span style="color: #2563eb; font-weight: 600;">v7.4.5</span></li>
+      <li><b>${isKm ? "អ្នកបង្កើត៖" : "Author / Creator:"}</b> <span style="color: #107c41; font-weight: 600;">K.Reaksmey</span></li>
+      <li><b>${isKm ? "ប្រព័ន្ធស្នូល (Core)៖" : "Core Engine:"}</b> C++ & Objective-C (Apple Cocoa / AppKit)</li>
+      <li><b>${isKm ? "ប្រព័ន្ធគណនា (Engine)៖" : "LaTeX Engine:"}</b> High-Resolution TeX Kernel (300 DPI)</li>
+      <li><b>${isKm ? "ការបញ្ចូល Word៖" : "Word Insertion:"}</b> 1-Click Auto Insert into Word (⌘I / Enter)</li>
+      <li><b>${isKm ? "តម្រឹមបន្ទាត់ (Baseline Alignment)៖" : "Baseline Alignment:"}</b> Automatic (Depth Ratio)</li>
+      <li><b>${isKm ? "ភាសាគាំទ្រ៖" : "Supported Languages:"}</b> ភាសាខ្មែរ 🇰🇭 & English 🇺🇸</li>
     </ul>
     <div style="text-align: center; margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8;">
       © 2026 Mathtype-kh • Created by K.Reaksmey
@@ -1184,24 +1335,49 @@ function showHelpModal() {
   if (footer) {
     footer.innerHTML = '<button class="action-btn primary-action" onclick="closeModal()">OK</button>';
   }
-  title.innerText = "របៀបប្រើប្រាស់ជាមួយ Microsoft Word";
-  body.innerHTML = `
-    <div style="font-size: 13px; line-height: 1.6;">
-      <h4 style="margin: 8px 0 4px 0; color: #107c41;">⚡ មុខងារ "បញ្ចូលទៅ Word" (One-Click Insert)៖</h4>
-      <p>គ្រាន់តែចុចលើប៊ូតុងពណ៌បៃតង <b>"បញ្ចូលទៅ Word"</b> កម្មវិធីនឹងបញ្ជូនរូបមន្តទៅបិទត្រង់កន្លែងទស្សន៍ទ្រនិចក្នុង Microsoft Word ដោយស្វ័យប្រវត្តិ ព្រមទាំងតម្រឹមជួរបន្ទាត់ (Baseline Alignment) យ៉ាងស្រស់ស្អាត!</p>
-      <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
-      <h4 style="margin: 8px 0 4px 0;">គ្រាប់ចុចកាត់ (Keyboard Shortcuts)៖</h4>
-      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-        <tr><td style="padding: 4px; font-family: monospace;">⌘ + I</td><td>បញ្ចូលទៅ Word ផ្ទាល់ (Insert into Word)</td></tr>
-        <tr><td style="padding: 4px; font-family: monospace;">⌥ + \\ ឬ ⌥ + T</td><td>Toggle TeX (ស្រង់សមីការចេញពី Word មកកែប្រែ)</td></tr>
-        <tr><td style="padding: 4px; font-family: monospace;">⌘ + C</td><td>ចម្លងទៅ Word (Copy to Word)</td></tr>
-        <tr><td style="padding: 4px; font-family: monospace;">⌘ + F</td><td>ប្រភាគបញ្ឈរ (Fraction)</td></tr>
-        <tr><td style="padding: 4px; font-family: monospace;">⌘ + R</td><td>ឬសការេ (Square Root)</td></tr>
-        <tr><td style="padding: 4px; font-family: monospace;">⌘ + H</td><td>ស្វ័យគុណ (Exponent)</td></tr>
-        <tr><td style="padding: 4px; font-family: monospace;">⌘ + L</td><td>សន្ទស្សន៍ (Subscript)</td></tr>
-      </table>
-    </div>
-  `;
+  const isKm = currentLang === 'km';
+  title.innerText = isKm ? "របៀបប្រើប្រាស់ជាមួយ Microsoft Word" : "Keyboard Shortcuts & Word Guide";
+  if (isKm) {
+    body.innerHTML = `
+      <div style="font-size: 13px; line-height: 1.6;">
+        <h4 style="margin: 8px 0 4px 0; color: #107c41;">⚡ មុខងារ "បញ្ចូលទៅ Word" (One-Click Insert)៖</h4>
+        <p>គ្រាន់តែចុចលើប៊ូតុងពណ៌បៃតង <b>"បញ្ចូលទៅ Word"</b> ឬចុច <b>Enter</b> / <b>⌘ + I</b> កម្មវិធីនឹងបញ្ជូនរូបមន្តទៅបិទត្រង់កន្លែងទស្សន៍ទ្រនិចក្នុង Microsoft Word ដោយស្វ័យប្រវត្តិ ព្រមទាំងតម្រឹមជួរបន្ទាត់ (Baseline Alignment) យ៉ាងស្រស់ស្អាត!</p>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
+        <h4 style="margin: 8px 0 4px 0;">គ្រាប់ចុចកាត់ (Keyboard Shortcuts)៖</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <tr><td style="padding: 4px; font-family: monospace;">Enter ឬ ⌘ + I</td><td>បញ្ចូលទៅ Word ផ្ទាល់ (Insert into Word)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌥ + \\ ឬ ⌥ + T</td><td>Toggle TeX (ស្រង់សមីការចេញពី Word មកកែប្រែ)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + C</td><td>ចម្លងរូបភាព 300 DPI ទៅ clipboard</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + F</td><td>ប្រភាគបញ្ឈរ (Fraction)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + R</td><td>ឬសការេ (Square Root)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⇧ + ⌘ + R</td><td>ឬសលំដាប់ n (N-th Root)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + H</td><td>ស្វ័យគុណ (Exponent)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + L</td><td>សន្ទស្សន៍ (Subscript)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + ⇧ + T</td><td>បញ្ចូលអក្សរខ្មែរ (Khmer Text)</td></tr>
+        </table>
+      </div>
+    `;
+  } else {
+    body.innerHTML = `
+      <div style="font-size: 13px; line-height: 1.6;">
+        <h4 style="margin: 8px 0 4px 0; color: #107c41;">⚡ One-Click Insert into Microsoft Word:</h4>
+        <p>Simply click the green <b>"Insert into Word"</b> button or press <b>Enter</b> / <b>⌘ + I</b>. The equation is automatically placed right at your cursor position in Word with true baseline alignment!</p>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid #ddd;">
+        <h4 style="margin: 8px 0 4px 0;">Keyboard Shortcuts:</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <tr><td style="padding: 4px; font-family: monospace;">Enter or ⌘ + I</td><td>Insert directly into Word</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌥ + \\ or ⌥ + T</td><td>Toggle TeX (Import equation from Word into MathType)</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + C</td><td>Copy 300 DPI image to clipboard</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + F</td><td>Vertical fraction</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + R</td><td>Square root</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⇧ + ⌘ + R</td><td>N-th root</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + H</td><td>Superscript / Exponent</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + L</td><td>Subscript</td></tr>
+          <tr><td style="padding: 4px; font-family: monospace;">⌘ + ⇧ + T</td><td>Insert Khmer text in math mode</td></tr>
+        </table>
+      </div>
+    `;
+  }
   document.getElementById("modalOverlay").classList.remove("hidden");
 }
 
@@ -1210,25 +1386,26 @@ function showLaTeXConfigModal() {
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
 
-  title.innerHTML = currentLang === 'km' ? "⚙️ កំណត់ផ្លូវ LaTeX Path (Configure LaTeX Engine)" : "⚙️ Configure LaTeX Path";
+  const isKm = currentLang === 'km';
+  title.innerHTML = isKm ? "⚙️ កំណត់ផ្លូវ LaTeX Path (Configure LaTeX Engine)" : "⚙️ Configure LaTeX Path";
 
   const savedPath = localStorage.getItem("mathtype_texbin_path") || "/Library/TeX/texbin";
 
   body.innerHTML = `
     <div class="tex-config-container">
       <p style="margin: 0; font-size: 12.5px; color: #475569;">
-        ${currentLang === 'km' 
+        ${isKm 
           ? "Mathtype-kh ប្រើប្រាស់ LaTeX Kernel ដើម្បីបង្កើតសមីការច្បាស់កម្រិត 300 DPI ចូលក្នុង Microsoft Word។ សូមពិនិត្យ ឬកំណត់ទីតាំងថត (Binary Directory) របស់ TeX:"
           : "Mathtype-kh uses the LaTeX Kernel to generate crystal clear 300 DPI equations into Microsoft Word. Please check or configure your TeX binary directory:"}
       </p>
 
       <div class="tex-input-group">
         <input type="text" id="texPathInput" class="tex-input" value="${savedPath}" placeholder="/Library/TeX/texbin" />
-        <button class="tex-btn" onclick="testCustomTeXPath()">${currentLang === 'km' ? "🔍 ពិនិត្យ" : "🔍 Check"}</button>
+        <button class="tex-btn" onclick="testCustomTeXPath()">${isKm ? "🔍 ពិនិត្យ" : "🔍 Check"}</button>
       </div>
 
       <div>
-        <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">${currentLang === 'km' ? "ផ្លូវពេញនិយម (Presets)៖" : "Common Presets:"}</span>
+        <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">${isKm ? "ផ្លូវពេញនិយម (Presets)៖" : "Common Presets:"}</span>
         <div class="tex-presets">
           <button class="tex-preset-btn" onclick="setTeXInputPath('/Library/TeX/texbin')">MacTeX (/Library/TeX/texbin)</button>
           <button class="tex-preset-btn" onclick="setTeXInputPath('/opt/homebrew/bin')">Homebrew (/opt/homebrew/bin)</button>
@@ -1239,15 +1416,15 @@ function showLaTeXConfigModal() {
       <div class="tex-status-box" id="texStatusBox">
         <div class="tex-status-item">
           <span>LaTeX Compiler (<code>latex</code>):</span>
-          <span id="badgeLatex" class="tex-badge">កំពុងពិនិត្យ...</span>
+          <span id="badgeLatex" class="tex-badge">${isKm ? "កំពុងពិនិត្យ..." : "Checking..."}</span>
         </div>
         <div class="tex-status-item">
           <span>DVI to PNG (<code>dvipng</code>):</span>
-          <span id="badgeDvipng" class="tex-badge">កំពុងពិនិត្យ...</span>
+          <span id="badgeDvipng" class="tex-badge">${isKm ? "កំពុងពិនិត្យ..." : "Checking..."}</span>
         </div>
         <div class="tex-status-item">
           <span>Baseline Analyzer (<code>dvisvgm</code>):</span>
-          <span id="badgeDvisvgm" class="tex-badge">កំពុងពិនិត្យ...</span>
+          <span id="badgeDvisvgm" class="tex-badge">${isKm ? "កំពុងពិនិត្យ..." : "Checking..."}</span>
         </div>
       </div>
       <div id="texStatusNote" style="font-size: 12px; color: #64748b;"></div>
@@ -1256,8 +1433,8 @@ function showLaTeXConfigModal() {
 
   if (footer) {
     footer.innerHTML = `
-      <button class="tex-btn" onclick="closeModal()" style="margin-right: 8px;">${currentLang === 'km' ? "បោះបង់" : "Cancel"}</button>
-      <button class="tex-btn primary" onclick="saveCustomTeXPath()">${currentLang === 'km' ? "💾 រក្សាទុក & ប្រើប្រាស់" : "💾 Save & Apply"}</button>
+      <button class="tex-btn" onclick="closeModal()" style="margin-right: 8px;">${isKm ? "បោះបង់" : "Cancel"}</button>
+      <button class="tex-btn primary" onclick="saveCustomTeXPath()">${isKm ? "💾 រក្សាទុក & ប្រើប្រាស់" : "💾 Save & Apply"}</button>
     `;
   }
 
@@ -1299,25 +1476,29 @@ function updateLaTeXConfigStatus(data) {
   const badgeDvipng = document.getElementById("badgeDvipng");
   const badgeDvisvgm = document.getElementById("badgeDvisvgm");
   const note = document.getElementById("texStatusNote");
+  const isKm = currentLang === 'km';
+
+  const textFound = isKm ? "✓ មាន (Found)" : "✓ Found";
+  const textMissing = isKm ? "✗ រកមិនឃើញ (Missing)" : "✗ Missing";
 
   if (badgeLatex) {
     badgeLatex.className = "tex-badge " + (data.latex ? "success" : "error");
-    badgeLatex.innerText = data.latex ? "✓ មាន (Found)" : "✗ រកមិនឃើញ (Missing)";
+    badgeLatex.innerText = data.latex ? textFound : textMissing;
   }
   if (badgeDvipng) {
     badgeDvipng.className = "tex-badge " + (data.dvipng ? "success" : "error");
-    badgeDvipng.innerText = data.dvipng ? "✓ មាន (Found)" : "✗ រកមិនឃើញ (Missing)";
+    badgeDvipng.innerText = data.dvipng ? textFound : textMissing;
   }
   if (badgeDvisvgm) {
     badgeDvisvgm.className = "tex-badge " + (data.dvisvgm ? "success" : "error");
-    badgeDvisvgm.innerText = data.dvisvgm ? "✓ មាន (Found)" : "✗ រកមិនឃើញ (Missing)";
+    badgeDvisvgm.innerText = data.dvisvgm ? textFound : textMissing;
   }
 
   if (note) {
     if (data.latex && data.dvipng) {
-      note.innerHTML = `<span style="color: #107c41; font-weight: 500;">✓ ផ្លូវ LaTeX ត្រឹមត្រូវ និងរួចរាល់សម្រាប់ការបង្កើតសមីការ!</span>`;
+      note.innerHTML = `<span style="color: #107c41; font-weight: 500;">${isKm ? "✓ ផ្លូវ LaTeX ត្រឹមត្រូវ និងរួចរាល់សម្រាប់ការបង្កើតសមីការ!" : "✓ LaTeX path is valid and ready for equation rendering!"}</span>`;
     } else {
-      note.innerHTML = `<span style="color: #c53030; font-weight: 500;">⚠ មិនអាចរកឃើញ latex/dvipng ក្នុងថតនេះទេ។ សូមជ្រើសរើសថតផ្សេង ឬដំឡើង MacTeX / BasicTeX។</span>`;
+      note.innerHTML = `<span style="color: #c53030; font-weight: 500;">${isKm ? "⚠ មិនអាចរកឃើញ latex/dvipng ក្នុងថតនេះទេ។ សូមជ្រើសរើសថតផ្សេង ឬដំឡើង MacTeX / BasicTeX។" : "⚠ Cannot find latex/dvipng in this directory. Please select another directory or install MacTeX / BasicTeX."}</span>`;
     }
   }
 }
@@ -1373,7 +1554,8 @@ function showLaTeXPreambleModal() {
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
 
-  title.innerHTML = currentLang === 'km' ? "📜 កំណត់ LaTeX Preamble & TeX Engine" : "📜 Configure LaTeX Preamble & TeX Engine";
+  const isKm = currentLang === 'km';
+  title.innerHTML = isKm ? "📜 កំណត់ LaTeX Preamble & TeX Engine" : "📜 Configure LaTeX Preamble & TeX Engine";
 
   const savedPreamble = localStorage.getItem("mathtype_custom_preamble") || DEFAULT_PREAMBLE;
   const savedEngine = localStorage.getItem("mathtype_custom_engine") || "auto";
@@ -1384,31 +1566,31 @@ function showLaTeXPreambleModal() {
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 14px; display:flex; flex-direction:column; gap:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
           <span style="font-size:12.5px; font-weight:700; color:#1e293b;">
-            ⚙️ ${currentLang === 'km' ? 'ជ្រើសរើស TeX Engine (Compiler)៖' : 'Choose TeX Engine (Compiler):'}
+            ⚙️ ${isKm ? 'ជ្រើសរើស TeX Engine (Compiler)៖' : 'Choose TeX Engine (Compiler):'}
           </span>
           <span id="engineBadge" style="font-size:11px; padding:2px 8px; border-radius:12px; background:#dbeafe; color:#1e40af; font-weight:600;">
-            ${savedEngine === 'xelatex' ? 'XeLaTeX (Khmer & Unicode)' : (savedEngine === 'pdflatex' ? 'pdfLaTeX (Standard)' : 'Auto-detect')}
+            ${savedEngine === 'xelatex' ? (isKm ? 'XeLaTeX (ខ្មែរ & Unicode)' : 'XeLaTeX (Khmer & Unicode)') : (savedEngine === 'pdflatex' ? (isKm ? 'pdfLaTeX (ស្តង់ដារ)' : 'pdfLaTeX (Standard)') : 'Auto-detect')}
           </span>
         </div>
         <div style="display:flex; gap:14px; flex-wrap:wrap; font-size:12px;">
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="radio" name="texEngine" value="auto" ${savedEngine === 'auto' ? 'checked' : ''} onchange="onEngineChange(this.value)">
-            <span>⚡ <b>Auto</b> (${currentLang === 'km' ? 'ស្វ័យប្រវត្តិតាមអក្សរ' : 'Auto-detect'})</span>
+            <span>⚡ <b>Auto</b> (${isKm ? 'ស្វ័យប្រវត្តិតាមអក្សរ' : 'Auto-detect'})</span>
           </label>
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="radio" name="texEngine" value="xelatex" ${savedEngine === 'xelatex' ? 'checked' : ''} onchange="onEngineChange(this.value)">
-            <span>🇰🇭 <b>XeLaTeX</b> (${currentLang === 'km' ? 'គាំទ្រអក្សរខ្មែរ & Modern Font' : 'Khmer & Unicode'})</span>
+            <span>🇰🇭 <b>XeLaTeX</b> (${isKm ? 'គាំទ្រអក្សរខ្មែរ & Modern Font' : 'Khmer & Unicode'})</span>
           </label>
           <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
             <input type="radio" name="texEngine" value="pdflatex" ${savedEngine === 'pdflatex' ? 'checked' : ''} onchange="onEngineChange(this.value)">
-            <span>📄 <b>pdfLaTeX</b> (${currentLang === 'km' ? 'ស្តង់ដារល្បឿនលឿន' : 'Fast Standard TeX'})</span>
+            <span>📄 <b>pdfLaTeX</b> (${isKm ? 'ស្តង់ដារល្បឿនលឿន' : 'Fast Standard TeX'})</span>
           </label>
         </div>
       </div>
 
       <!-- 2. Preamble Code Area -->
       <p style="margin: 0; font-size: 12.5px; color: #475569;">
-        ${currentLang === 'km' 
+        ${isKm 
           ? "បន្ថែម ឬកែប្រែកញ្ចប់ Packages (ឧ. amsmath, physics, siunitx, bm) និង Macro Commands (\\newcommand) សម្រាប់ប្រើប្រាស់ក្នុងដំណើរការបង្កើតសមីការ 300 DPI៖"
           : "Add or edit LaTeX packages (e.g. amsmath, physics, siunitx, bm) and custom macros (\\newcommand) used during 300 DPI equation rendering:"}
       </p>
@@ -1417,7 +1599,7 @@ function showLaTeXPreambleModal() {
 
       <!-- 3. Quick Insert Presets -->
       <div>
-        <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">${currentLang === 'km' ? "កញ្ចប់ពេញនិយម (Quick Insert)៖" : "Quick Insert Packages:"}</span>
+        <span style="font-size: 11.5px; color: #64748b; font-weight: 500;">${isKm ? "កញ្ចប់ពេញនិយម (Quick Insert)៖" : "Quick Insert Packages:"}</span>
         <div class="tex-presets" style="margin-top: 6px; display:flex; flex-wrap:wrap; gap:5px;">
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{physics}')">+ physics</button>
           <button class="tex-preset-btn" onclick="insertPreamblePackage('\\\\usepackage{siunitx}')">+ siunitx</button>
@@ -1429,16 +1611,16 @@ function showLaTeXPreambleModal() {
       </div>
 
       <div style="font-size: 11.5px; color: #64748b;">
-        💡 <b>${currentLang === 'km' ? "ចំណាំ" : "Note"}:</b> ${currentLang === 'km' ? "ការកំណត់ Engine និង Packages នៅទីនេះ នឹងដំណើរការរួមគ្នាទាំងលើកម្មវិធី Mathtype-kh និងលើ Microsoft Word Add-in (Toggle TeX) ដោយស្វ័យប្រវត្តិ។" : "Engine and preamble configurations defined here will automatically apply to both Mathtype-kh and Microsoft Word Add-in (Toggle TeX)."}
+        💡 <b>${isKm ? "ចំណាំ" : "Note"}:</b> ${isKm ? "ការកំណត់ Engine និង Packages នៅទីនេះ នឹងដំណើរការរួមគ្នាទាំងលើកម្មវិធី Mathtype-kh និងលើ Microsoft Word Add-in (Toggle TeX) ដោយស្វ័យប្រវត្តិ។" : "Engine and preamble configurations defined here will automatically apply to both Mathtype-kh and Microsoft Word Add-in (Toggle TeX)."}
       </div>
     </div>
   `;
 
   if (footer) {
     footer.innerHTML = `
-      <button class="tex-btn" onclick="resetPreambleDefault()" style="margin-right: auto;">${currentLang === 'km' ? "🔄 យកលំនាំដើមវិញ" : "🔄 Reset Default"}</button>
-      <button class="tex-btn" onclick="closeModal()" style="margin-right: 8px;">${currentLang === 'km' ? "បោះបង់" : "Cancel"}</button>
-      <button class="tex-btn primary" onclick="saveCustomPreamble()">${currentLang === 'km' ? "💾 រក្សាទុក & ប្រើប្រាស់" : "💾 Save & Apply"}</button>
+      <button class="tex-btn" onclick="resetPreambleDefault()" style="margin-right: auto;">${isKm ? "🔄 យកលំនាំដើមវិញ" : "🔄 Reset Default"}</button>
+      <button class="tex-btn" onclick="closeModal()" style="margin-right: 8px;">${isKm ? "បោះបង់" : "Cancel"}</button>
+      <button class="tex-btn primary" onclick="saveCustomPreamble()">${isKm ? "💾 រក្សាទុក & ប្រើប្រាស់" : "💾 Save & Apply"}</button>
     `;
   }
 
@@ -1452,17 +1634,18 @@ function showLaTeXPreambleModal() {
 
 function onEngineChange(engine) {
   const badge = document.getElementById("engineBadge");
+  const isKm = currentLang === 'km';
   if (badge) {
     if (engine === "xelatex") {
-      badge.innerText = currentLang === 'km' ? "XeLaTeX (ខ្មែរ & Unicode)" : "XeLaTeX (Khmer & Unicode)";
+      badge.innerText = isKm ? "XeLaTeX (ខ្មែរ & Unicode)" : "XeLaTeX (Khmer & Unicode)";
       badge.style.background = "#dbeafe";
       badge.style.color = "#1e40af";
     } else if (engine === "pdflatex") {
-      badge.innerText = currentLang === 'km' ? "pdfLaTeX (ស្តង់ដារ)" : "pdfLaTeX (Standard)";
+      badge.innerText = isKm ? "pdfLaTeX (ស្តង់ដារ)" : "pdfLaTeX (Standard)";
       badge.style.background = "#f1f5f9";
       badge.style.color = "#475569";
     } else {
-      badge.innerText = currentLang === 'km' ? "Auto (ស្វ័យប្រវត្តិ)" : "Auto-detect";
+      badge.innerText = isKm ? "Auto-detect (ស្វ័យប្រវត្តិ)" : "Auto-detect";
       badge.style.background = "#dcfce7";
       badge.style.color = "#166534";
     }
@@ -1765,14 +1948,15 @@ function openHistoryModal() {
   const title = document.getElementById("modalTitle");
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
+  const isKm = currentLang === 'km';
   
-  title.innerText = currentLang === 'km' ? "🕒 ប្រវត្តិសមីការ (Equation History)" : "🕒 Equation History";
+  title.innerText = isKm ? "🕒 ប្រវត្តិសមីការ" : "🕒 Equation History";
   
   if (list.length === 0) {
     body.innerHTML = `
       <div style="text-align: center; padding: 30px; color: #64748b;">
-        <p style="font-size: 15px; margin-bottom: 8px;">📂 ${currentLang === 'km' ? "មិនទាន់មានប្រវត្តិសមីការនៅឡើយទេ" : "No equation history yet"}</p>
-        <p style="font-size: 12px;">${currentLang === 'km' ? "សមីការដែលអ្នកបញ្ចូលទៅ Word ឬចម្លង នឹងត្រូវរក្សាទុកនៅទីនេះដោយស្វ័យប្រវត្តិ។" : "Equations you insert into Word or copy will automatically appear here."}</p>
+        <p style="font-size: 15px; margin-bottom: 8px;">📂 ${isKm ? "មិនទាន់មានប្រវត្តិសមីការនៅឡើយទេ" : "No equation history yet"}</p>
+        <p style="font-size: 12px;">${isKm ? "សមីការដែលអ្នកបញ្ចូលទៅ Word ឬចម្លង នឹងត្រូវរក្សាទុកនៅទីនេះដោយស្វ័យប្រវត្តិ។" : "Equations you insert into Word or copy will automatically appear here."}</p>
       </div>
     `;
     footer.innerHTML = `<button class="action-btn" onclick="closeModal()">OK</button>`;
@@ -1781,13 +1965,14 @@ function openHistoryModal() {
     list.forEach((item, idx) => {
       const isFav = favSet.has(item.latex);
       const safeLatex = item.latex.replace(/\\/g, "\\\\").replace(/"/g, "&quot;").replace(/'/g, "\\'");
+      const favTitle = isFav ? (isKm ? "ដកចេញពីសំណព្វ" : "Remove Favorite") : (isKm ? "ដាក់ជាសំណព្វ" : "Add to Favorites");
       html += `
         <div class="history-card">
           <div class="history-eq-preview" id="hist_preview_${idx}" onclick="useEquationFromList('${safeLatex}')"></div>
           <div class="history-actions">
-            <button class="btn-star ${isFav ? 'active' : ''}" title="${isFav ? 'Remove Favorite' : 'Add to Favorites'}" onclick="toggleFavoriteFromModal('${safeLatex}', true)">★</button>
-            <button class="action-btn insert-word-action" style="padding: 2px 10px; font-size: 11.5px;" onclick="useEquationFromList('${safeLatex}')">${currentLang === 'km' ? "ប្រើ" : "Use"}</button>
-            <button class="btn-delete-item" title="Delete" onclick="deleteHistoryItem(${idx})">✕</button>
+            <button class="btn-star ${isFav ? 'active' : ''}" title="${favTitle}" onclick="toggleFavoriteFromModal('${safeLatex}', true)">★</button>
+            <button class="action-btn insert-word-action" style="padding: 2px 10px; font-size: 11.5px;" onclick="useEquationFromList('${safeLatex}')">${isKm ? "ប្រើ" : "Use"}</button>
+            <button class="btn-delete-item" title="${isKm ? 'លុប' : 'Delete'}" onclick="deleteHistoryItem(${idx})">✕</button>
           </div>
         </div>
       `;
@@ -1796,8 +1981,8 @@ function openHistoryModal() {
     body.innerHTML = html;
     footer.innerHTML = `
       <div style="display: flex; justify-content: space-between; width: 100%;">
-        <button class="action-btn danger-hover-btn" onclick="clearAllHistory()">${currentLang === 'km' ? "សម្អាតប្រវត្តិទាំងអស់" : "Clear All History"}</button>
-        <button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "បិទ" : "Close"}</button>
+        <button class="action-btn danger-hover-btn" onclick="clearAllHistory()">${isKm ? "សម្អាតប្រវត្តិទាំងអស់" : "Clear All History"}</button>
+        <button class="action-btn" onclick="closeModal()">${isKm ? "បិទ" : "Close"}</button>
       </div>
     `;
 
@@ -1824,14 +2009,15 @@ function openFavoritesModal() {
   const title = document.getElementById("modalTitle");
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
+  const isKm = currentLang === 'km';
   
-  title.innerText = currentLang === 'km' ? "⭐ រូបមន្តសំណព្វ (Favorites)" : "⭐ Favorite Formulas";
+  title.innerText = isKm ? "⭐ រូបមន្តសំណព្វ" : "⭐ Favorite Formulas";
   
   if (favs.length === 0) {
     body.innerHTML = `
       <div style="text-align: center; padding: 30px; color: #64748b;">
-        <p style="font-size: 15px; margin-bottom: 8px;">⭐ ${currentLang === 'km' ? "មិនទាន់មានរូបមន្តសំណព្វនៅឡើយទេ" : "No favorite equations yet"}</p>
-        <p style="font-size: 12px;">${currentLang === 'km' ? "អ្នកអាចចុចផ្កាយ ★ ក្នុងបញ្ជីប្រវត្តិ ដើម្បីរក្សាទុករូបមន្តដែលប្រើញឹកញាប់។" : "Click the star icon ★ on any equation in History to bookmark it here."}</p>
+        <p style="font-size: 15px; margin-bottom: 8px;">⭐ ${isKm ? "មិនទាន់មានរូបមន្តសំណព្វនៅឡើយទេ" : "No favorite equations yet"}</p>
+        <p style="font-size: 12px;">${isKm ? "អ្នកអាចចុចផ្កាយ ★ ក្នុងបញ្ជីប្រវត្តិ ដើម្បីរក្សាទុករូបមន្តដែលប្រើញឹកញាប់។" : "Click the star icon ★ on any equation in History to bookmark it here."}</p>
       </div>
     `;
     footer.innerHTML = `<button class="action-btn" onclick="closeModal()">OK</button>`;
@@ -1843,15 +2029,15 @@ function openFavoritesModal() {
         <div class="history-card">
           <div class="history-eq-preview" id="fav_preview_${idx}" onclick="useEquationFromList('${safeLatex}')"></div>
           <div class="history-actions">
-            <button class="action-btn insert-word-action" style="padding: 2px 10px; font-size: 11.5px;" onclick="useEquationFromList('${safeLatex}')">${currentLang === 'km' ? "ប្រើ" : "Use"}</button>
-            <button class="btn-delete-item" title="Delete" onclick="deleteFavoriteItem(${idx})">✕</button>
+            <button class="action-btn insert-word-action" style="padding: 2px 10px; font-size: 11.5px;" onclick="useEquationFromList('${safeLatex}')">${isKm ? "ប្រើ" : "Use"}</button>
+            <button class="btn-delete-item" title="${isKm ? 'លុប' : 'Delete'}" onclick="deleteFavoriteItem(${idx})">✕</button>
           </div>
         </div>
       `;
     });
     html += `</div>`;
     body.innerHTML = html;
-    footer.innerHTML = `<button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "បិទ" : "Close"}</button>`;
+    footer.innerHTML = `<button class="action-btn" onclick="closeModal()">${isKm ? "បិទ" : "Close"}</button>`;
 
     setTimeout(() => {
       favs.forEach((item, idx) => {
@@ -1951,7 +2137,7 @@ async function actionCheckUpdates() {
   document.getElementById("modalOverlay").classList.remove("hidden");
 
   try {
-    const currentVersion = "7.4.4";
+    const currentVersion = "7.4.5";
     const res = await fetch("https://api.github.com/repos/Krotreaksmey2200/Mathtype_kh/releases/latest");
     if (!res.ok) throw new Error("Could not fetch release info");
     const data = await res.json();

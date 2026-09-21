@@ -42,28 +42,28 @@
             <div class="dropdown-row" onclick="actionPaste()"><span class="item-name">Paste</span><span class="item-shortcut">⌘V</span></div>
             <div class="dropdown-row" onclick="actionSelectAll()"><span class="item-name">Select All</span><span class="item-shortcut">⌘A</span></div>
             <div class="dropdown-separator"></div>
-            <div class="dropdown-row" onclick="actionToggleTeX()"><span class="item-name" id="menuToggleTeX">Toggle TeX (ពី Word មក Mathtype-kh)</span><span class="item-shortcut">⌥\</span></div>
+            <div class="dropdown-row" onclick="actionToggleTeX()"><span class="item-name" id="menuToggleTeX">Toggle TeX</span><span class="item-shortcut">⌥\</span></div>
           </div>
         </div>
         <div class="menu-item" data-menu="view">
           <span class="menu-label" id="menuView">View</span>
           <div class="menu-dropdown">
-            <div class="dropdown-row" onclick="setZoom(1.0)"><span class="item-name">Zoom 100% (Standard)</span></div>
-            <div class="dropdown-row" onclick="setZoom(1.5)"><span class="item-name">Zoom 150%</span></div>
-            <div class="dropdown-row" onclick="setZoom(2.0)"><span class="item-name">Zoom 200%</span></div>
-            <div class="dropdown-row" onclick="setZoom(3.0)"><span class="item-name">Zoom 300%</span></div>
+            <div class="dropdown-row" onclick="setZoom(1.0)"><span class="item-name" id="menuZoom100">Zoom 100% (Standard)</span></div>
+            <div class="dropdown-row" onclick="setZoom(1.5)"><span class="item-name" id="menuZoom150">Zoom 150%</span></div>
+            <div class="dropdown-row" onclick="setZoom(2.0)"><span class="item-name" id="menuZoom200">Zoom 200%</span></div>
+            <div class="dropdown-row" onclick="setZoom(3.0)"><span class="item-name" id="menuZoom300">Zoom 300%</span></div>
             <div class="dropdown-separator"></div>
-            <div class="dropdown-row" onclick="toggleTabs()"><span class="item-name">Toggle Tabbed Expressions Bar</span></div>
+            <div class="dropdown-row" onclick="toggleTabs()"><span class="item-name" id="menuToggleTabs">Toggle Tabbed Expressions Bar</span></div>
           </div>
         </div>
         <div class="menu-item" data-menu="style">
           <span class="menu-label" id="menuStyle">Style</span>
           <div class="menu-dropdown">
-            <div class="dropdown-row active-check" onclick="setStyle('math')"><span class="item-name">✓ Math (Automatic)</span><span class="item-shortcut">⌘+</span></div>
-            <div class="dropdown-row" onclick="setStyle('text')"><span class="item-name">Text</span><span class="item-shortcut">⇧⌘T</span></div>
-            <div class="dropdown-row" onclick="setStyle('function')"><span class="item-name">Function</span><span class="item-shortcut">⇧⌘F</span></div>
-            <div class="dropdown-row" onclick="setStyle('variable')"><span class="item-name">Variable</span><span class="item-shortcut">⇧⌘V</span></div>
-            <div class="dropdown-row" onclick="setStyle('greek')"><span class="item-name">Greek</span><span class="item-shortcut">⇧⌘G</span></div>
+            <div class="dropdown-row active-check" onclick="setStyle('math')"><span class="item-name" id="menuStyleMath">✓ Math (Automatic)</span><span class="item-shortcut">⌘+</span></div>
+            <div class="dropdown-row" onclick="setStyle('text')"><span class="item-name" id="menuStyleText">Text</span><span class="item-shortcut">⇧⌘T</span></div>
+            <div class="dropdown-row" onclick="setStyle('function')"><span class="item-name" id="menuStyleFunc">Function</span><span class="item-shortcut">⇧⌘F</span></div>
+            <div class="dropdown-row" onclick="setStyle('variable')"><span class="item-name" id="menuStyleVar">Variable</span><span class="item-shortcut">⇧⌘V</span></div>
+            <div class="dropdown-row" onclick="setStyle('greek')"><span class="item-name" id="menuStyleGreek">Greek</span><span class="item-shortcut">⇧⌘G</span></div>
           </div>
         </div>
         <div class="menu-item" data-menu="size">
@@ -71,7 +71,7 @@
           <div class="menu-dropdown">
             <div class="dropdown-row" onclick="setEquationSize(10)"><span class="item-name">10 pt</span></div>
             <div class="dropdown-row" onclick="setEquationSize(11)"><span class="item-name">11 pt</span></div>
-            <div class="dropdown-row active-check" id="sizeMenu12" onclick="setEquationSize(12)"><span class="item-name">✓ 12 pt (លំនាំដើម / Default)</span></div>
+            <div class="dropdown-row active-check" id="sizeMenu12" onclick="setEquationSize(12)"><span class="item-name" id="sizeMenu12Label">✓ 12 pt (Default)</span></div>
             <div class="dropdown-row" onclick="setEquationSize(13)"><span class="item-name">13 pt</span></div>
             <div class="dropdown-row" id="sizeMenu14" onclick="setEquationSize(14)"><span class="item-name">14 pt</span></div>
             <div class="dropdown-row" onclick="setEquationSize(16)"><span class="item-name">16 pt</span></div>
@@ -85,12 +85,12 @@
         <div class="menu-item" data-menu="help">
           <span class="menu-label" id="menuHelp">Help</span>
           <div class="menu-dropdown">
-            <div class="dropdown-row" onclick="showHelpModal()"><span class="item-name">Keyboard Shortcuts Guide...</span></div>
-            <div class="dropdown-row" onclick="showLaTeXConfigModal()"><span class="item-name" id="menuLatexConfig">⚙️ កំណត់ផ្លូវ LaTeX Path (Config LaTeX)...</span></div>
-            <div class="dropdown-row" onclick="showLaTeXPreambleModal()"><span class="item-name" id="menuLatexPreamble">📜 កំណត់ LaTeX Preamble...</span></div>
+            <div class="dropdown-row" onclick="showHelpModal()"><span class="item-name" id="menuHelpGuide">Keyboard Shortcuts Guide...</span></div>
+            <div class="dropdown-row" onclick="showLaTeXConfigModal()"><span class="item-name" id="menuLatexConfig">⚙️ Configure LaTeX Path...</span></div>
+            <div class="dropdown-row" onclick="showLaTeXPreambleModal()"><span class="item-name" id="menuLatexPreamble">📜 Configure LaTeX Preamble...</span></div>
             <div class="dropdown-separator"></div>
-            <div class="dropdown-row" onclick="actionCheckUpdates()"><span class="item-name" id="menuCheckUpdates">🔄 ពិនិត្យមើលកំណែថ្មី (Check for Updates)...</span></div>
-            <div class="dropdown-row" onclick="showAboutModal()"><span class="item-name">About Mathtype-kh...</span></div>
+            <div class="dropdown-row" onclick="actionCheckUpdates()"><span class="item-name" id="menuCheckUpdates">🔄 Check for Updates...</span></div>
+            <div class="dropdown-row" onclick="showAboutModal()"><span class="item-name" id="menuAbout">About Mathtype-kh...</span></div>
           </div>
         </div>
       </div>
@@ -147,7 +147,7 @@
           </button>
 
           <!-- Auto Word Toggle Pill -->
-          <label class="auto-word-pill active" title="ពេលចុច Enter វានឹងលោតចូល Word ដោយស្វ័យប្រវត្តិ">
+          <label class="auto-word-pill active" id="pillAutoWord" title="ពេលចុច Enter វានឹងលោតចូល Word ដោយស្វ័យប្រវត្តិ">
             <input type="checkbox" id="autoWordCheck" checked onchange="toggleAutoWord(this.checked)" />
             <span class="pill-switch"><span class="pill-knob"></span></span>
             <span class="pill-label">Auto Word</span>
@@ -173,7 +173,7 @@
         <div class="action-btn-group">
           <!-- Khmer Text Button -->
           <button class="action-btn khmer-text-btn" onclick="insertKhmerText()" id="btnKhmerText" title="បញ្ចូលអក្សរខ្មែរក្នុងសមីការ (⌘⇧T)">
-            <span>🇰🇭 អក្សរខ្មែរ</span>
+            <span id="labelKhmerText">🇰🇭 អក្សរខ្មែរ</span>
           </button>
 
           <!-- History Button -->

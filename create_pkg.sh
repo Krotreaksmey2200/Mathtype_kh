@@ -4,7 +4,7 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
-VERSION="${1:-7.4.4}"
+VERSION="${1:-7.4.5}"
 VERSION="${VERSION#v}"
 TAG="v${VERSION}"
 

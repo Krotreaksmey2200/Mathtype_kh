@@ -8,9 +8,9 @@
 
 | Package | Description | Direct Download |
 |---|---|---|
-| **Mathtype-kh All-in-One** | Installs both **Mathtype-kh.app** and the **Microsoft Word Plugin Suite** *(Recommended)* | 👉 **[Download Mathtype-kh-v7.4.4.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-v7.4.4.pkg)** |
-| **Word Plugin Standalone** | Installs only the **Microsoft Word Add-in & Ribbon toolbar** | 👉 **[Download Mathtype-kh-WordPlugin-v7.4.4.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Mathtype-kh-WordPlugin-v7.4.4.pkg)** |
-| **Complete Uninstaller** | Completely removes and cleans up all app files, Word templates, and settings | 👉 **[Download Remove_mathtype_kh.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.4/Remove_mathtype_kh.pkg)** |
+| **Mathtype-kh All-in-One** | Installs both **Mathtype-kh.app** and the **Microsoft Word Plugin Suite** *(Recommended)* | 👉 **[Download Mathtype-kh-v7.4.5.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.5/Mathtype-kh-v7.4.5.pkg)** |
+| **Word Plugin Standalone** | Installs only the **Microsoft Word Add-in & Ribbon toolbar** | 👉 **[Download Mathtype-kh-WordPlugin-v7.4.5.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.5/Mathtype-kh-WordPlugin-v7.4.5.pkg)** |
+| **Complete Uninstaller** | Completely removes and cleans up all app files, Word templates, and settings | 👉 **[Download Remove_mathtype_kh.pkg](https://github.com/Krotreaksmey2200/Mathtype_kh/releases/download/v7.4.5/Remove_mathtype_kh.pkg)** |
 
 > 💡 **Compatibility:** Universal Binary supporting both **Apple Silicon (M1/M2/M3/M4)** and **Intel** Macs on macOS 11.0 Big Sur through macOS 15+ Sequoia.  
 > 🔗 View all versions on **[GitHub Releases](https://github.com/Krotreaksmey2200/Mathtype_kh/releases)**.

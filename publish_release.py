@@ -18,7 +18,7 @@ def get_git_credentials():
     return creds.get('password')
 
 def main():
-    version = sys.argv[1] if len(sys.argv) > 1 else "v7.4.4"
+    version = sys.argv[1] if len(sys.argv) > 1 else "v7.4.5"
     if not version.startswith("v"):
         tag_name = "v" + version
     else:
@@ -52,16 +52,17 @@ def main():
 
 ### 🌟 លក្ខណៈពិសេសចម្បង (What's New in {tag_name}):
 1. **🇰🇭 មុខងារសរសេរអក្សរខ្មែរក្នុងសមីការ (Khmer Text in Math Mode)**៖ ប៊ូតុង «🇰🇭 អក្សរខ្មែរ» ឬចុច `⌘ + ⇧ + T` ដើម្បីសរសេរអក្សរខ្មែរក្នុងរូបមន្ត
-2. **🎯 ប៊ូតុងទាំង ៥ លើ MS Word (Word Ribbon Suite Integration)**៖
+2. **🌐 Pure English Localization**៖ មុខងារប្ដូរភាសាទៅអង់គ្លេសសុទ្ធ 100% លើ Menu Help, Edit, Size, Style, Modals, Tooltips និង Palettes
+3. **🎯 ប៊ូតុងទាំង ៥ លើ MS Word (Word Ribbon Suite Integration)**៖
    - បើក Mathtype-kh ភ្លាមៗពី MS Word
    - កែប្រែសមីការ (Edit Selected Equation) ស្រង់សមីការដែលបានជ្រើសក្នុង Word ទៅកែក្នុង Mathtype-kh ដោយផ្ទាល់
    - Toggle TeX ($...$) បំប្លែងរវាងអក្សរ TeX និងរូបភាពសមីការ (Smart Paragraph Detection)
    - Align Selection & Align Document តម្រឹមបន្ទាត់កណ្តាលសមីការ (Mathematical Baseline) ដោយស្វ័យប្រវត្តិកម្រិតខ្ពស់សម្រាប់ `cases`, `matrix`, `aligned`, `int`, និង `frac`
-3. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
-4. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
-5. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
-6. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
-7. **🔄 ប្រព័ន្ធត្រួតពិនិត្យកំណែថ្មី (Auto-Update Checker)**៖ ពិនិត្យកំណែថ្មីពី GitHub ក្នុង Menu Help -> Check for Updates...
+4. **🧪 ផ្ទាំង និងរូបមន្តគីមីវិទ្យា (Chemistry Tab & mhchem)**៖ រូបមន្តប្រតិកម្មគីមី លំនឹងគីមីទ្វេទិស បន្ទុកអ៊ីយ៉ុង
+5. **🕒 ប្រវត្តិសមីការ (History) និង ⭐ សំណព្វ (Favorites)**៖ រក្សាទុក ៣០ សមីការចុងក្រោយ ដាក់ផ្កាយ និងចុចប្រើឡើងវិញភ្លាមៗ (`⌘ + ⇧ + H`)
+6. **✏️ ចុចពីរដងលើសមីការក្នុង Word ដើម្បីកែប្រែ (Double-Click in Word)**៖ Double-click លើរូបភាពសមីការក្នុង Word បើក Mathtype-kh កែប្រែភ្លាមៗ
+7. **📄 នាំចេញជា Vector SVG និង Vector PDF**៖ ឯកសារ Vector គុណភាពខ្ពស់បំផុតកម្រិតបោះពុម្ព
+8. **🔄 ប្រព័ន្ធត្រួតពិនិត្យកំណែថ្មី (Auto-Update Checker)**៖ ពិនិត្យកំណែថ្មីពី GitHub ក្នុង Menu Help -> Check for Updates...
 
 ---
 
