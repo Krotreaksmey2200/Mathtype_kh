@@ -1729,7 +1729,12 @@ function saveCustomPreamble() {
     : `✓ Saved Preamble & Engine (${selectedEngine.toUpperCase()}) successfully!`, true);
 }
 
-function closeModal() {
+let isAutoUpdating = false;
+
+function closeModal(e) {
+  if (isAutoUpdating) return;
+  const closeBtn = document.querySelector(".modal-close-btn");
+  if (closeBtn) closeBtn.style.visibility = "visible";
   document.getElementById("modalOverlay").classList.add("hidden");
   const footer = document.getElementById("modalFooter");
   if (footer) {
@@ -2127,6 +2132,9 @@ async function actionCheckUpdates() {
   const body = document.getElementById("modalBody");
   const footer = document.getElementById("modalFooter");
   
+  const closeBtn = document.querySelector(".modal-close-btn");
+  if (closeBtn) closeBtn.style.visibility = "visible";
+  
   title.innerText = currentLang === 'km' ? "🔄 ពិនិត្យមើលកំណែថ្មី" : "🔄 Check for Updates";
   body.innerHTML = `
     <div style="text-align: center; padding: 25px;">
@@ -2147,6 +2155,22 @@ async function actionCheckUpdates() {
     const isNewer = cleanLatest.localeCompare(currentVersion, undefined, { numeric: true, sensitivity: 'base' }) > 0;
 
     if (isNewer) {
+      // Find direct package asset URL
+      let downloadUrl = "";
+      if (data.assets && data.assets.length > 0) {
+        const pkgAsset = data.assets.find(a => {
+          const n = (a.name || "").toLowerCase();
+          return n.endsWith(".pkg") && n.includes("mathtype-kh") && !n.includes("wordplugin") && !n.includes("remove");
+        }) || data.assets.find(a => {
+          const n = (a.name || "").toLowerCase();
+          return n.endsWith(".pkg") && !n.includes("remove");
+        }) || data.assets[0];
+        if (pkgAsset) {
+          downloadUrl = pkgAsset.browser_download_url;
+        }
+      }
+      if (!downloadUrl) downloadUrl = data.html_url;
+
       body.innerHTML = `
         <div style="text-align: center; margin-bottom: 12px;">
           <h3 style="color: #107c41; font-size: 16px;">🎉 ${currentLang === 'km' ? "មានកំណែថ្មីអាចទាញយកបាន!" : "New Update Available!"}</h3>
@@ -2156,13 +2180,13 @@ async function actionCheckUpdates() {
         </div>
         <div class="update-box">
           <p style="font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #15803d;">📝 ${currentLang === 'km' ? "កំណត់ត្រានៃការផ្លាស់ប្តូរ (Changelog)" : "Release Notes"}:</p>
-          <div style="font-size: 11.5px; line-height: 1.5; color: #334155; max-height: 140px; overflow-y: auto; white-space: pre-wrap;">${data.body || "Bug fixes and improvements."}</div>
+          <div style="font-size: 11.5px; line-height: 1.5; color: #334155; max-height: 140px; overflow-y: auto; white-space: pre-wrap;">${data.body || "Bug fixes and performance improvements."}</div>
         </div>
       `;
       footer.innerHTML = `
         <div style="display: flex; justify-content: flex-end; gap: 8px; width: 100%;">
           <button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "ពេលក្រោយ" : "Later"}</button>
-          <button class="action-btn insert-word-action" onclick="openExternalUrl('${data.html_url}'); closeModal();">⬇️ ${currentLang === 'km' ? "ទាញយកកំណែថ្មី" : "Download Update"}</button>
+          <button class="action-btn insert-word-action" onclick="startAutoUpdate('${downloadUrl}', '${cleanLatest}')">🚀 ${currentLang === 'km' ? "ធ្វើបច្ចុប្បន្នភាពឥឡូវនេះ" : "Update Now"}</button>
         </div>
       `;
     } else {
@@ -2184,6 +2208,151 @@ async function actionCheckUpdates() {
     `;
     footer.innerHTML = `<button class="action-btn" onclick="closeModal()">OK</button>`;
   }
+}
+
+function startAutoUpdate(downloadUrl, version) {
+  if (!downloadUrl) return;
+  isAutoUpdating = true;
+  
+  // Hide top close button during update
+  const closeBtn = document.querySelector(".modal-close-btn");
+  if (closeBtn) closeBtn.style.visibility = "hidden";
+  
+  const title = document.getElementById("modalTitle");
+  const body = document.getElementById("modalBody");
+  const footer = document.getElementById("modalFooter");
+  
+  title.innerText = currentLang === 'km' ? "⚡ កំពុងធ្វើបច្ចុប្បន្នភាព Mathtype-kh" : "⚡ Updating Mathtype-kh";
+  
+  body.innerHTML = `
+    <div style="text-align: center; padding: 18px 8px;">
+      <div style="font-size: 40px; margin-bottom: 12px; display: inline-block; animation: rocketPulse 1.2s ease-in-out infinite;">🚀</div>
+      <h3 id="updateStatusHeading" style="font-size: 15px; font-weight: 600; color: #1e293b; margin-bottom: 4px;">
+        ${currentLang === 'km' ? 'កំពុងទាញយកកំណែថ្មី...' : 'Downloading update...'}
+      </h3>
+      <p id="updateStatusDetail" style="font-size: 12px; color: #64748b; margin-bottom: 18px;">
+        Mathtype-kh v${version}
+      </p>
+      
+      <!-- Progress Bar Track & Bar -->
+      <div style="background: #e2e8f0; border-radius: 999px; height: 12px; overflow: hidden; width: 100%; position: relative; box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);">
+        <div id="updateProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #107c41, #2563eb); border-radius: 999px; transition: width 0.25s ease-out;"></div>
+      </div>
+      
+      <!-- Progress Percentage and Detail Text -->
+      <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; color: #475569; margin-top: 8px;">
+        <span id="updateStageText">${currentLang === 'km' ? 'កំពុងចាប់ផ្ដើមទាញយក...' : 'Starting download...'}</span>
+        <span id="updatePercentText" style="font-weight: 700; color: #107c41;">0%</span>
+      </div>
+
+      <div id="updateHintText" style="margin-top: 18px; font-size: 11.5px; color: #94a3b8; line-height: 1.4;">
+        ${currentLang === 'km' ? 'ℹ️ កម្មវិធីនឹងចាប់ផ្ដើមឡើងវិញដោយស្វ័យប្រវត្តិ នៅពេលតម្លើងរួចរាល់' : 'ℹ️ The app will restart automatically once the update completes.'}
+      </div>
+    </div>
+  `;
+  
+  footer.innerHTML = `
+    <div style="display: flex; justify-content: center; width: 100%;">
+      <button id="cancelUpdateBtn" class="action-btn" onclick="cancelAutoUpdate()" style="font-size: 11px; padding: 4px 14px; color: #94a3b8; border-color: #cbd5e1;">
+        ${currentLang === 'km' ? 'បោះបង់' : 'Cancel'}
+      </button>
+    </div>
+  `;
+  
+  // Register global callback for native AppKit controller
+  window.onUpdateProgress = function(data) {
+    handleUpdateProgressEvent(data, downloadUrl, version);
+  };
+  
+  // Post message to native WebKit message handler
+  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+    window.webkit.messageHandlers.nativeApp.postMessage({
+      type: "performAutoUpdate",
+      url: downloadUrl,
+      version: version
+    });
+  } else {
+    // Fallback if accessed from standard browser
+    openExternalUrl(downloadUrl);
+    closeModal();
+  }
+}
+
+function handleUpdateProgressEvent(data, downloadUrl, version) {
+  const progressBar = document.getElementById("updateProgressBar");
+  const percentText = document.getElementById("updatePercentText");
+  const stageText = document.getElementById("updateStageText");
+  const heading = document.getElementById("updateStatusHeading");
+  const cancelBtn = document.getElementById("cancelUpdateBtn");
+  
+  const stage = data.stage;
+  const percent = Math.min(100, Math.max(0, data.percent || 0));
+  
+  if (progressBar) progressBar.style.width = percent + "%";
+  if (percentText) percentText.innerText = percent + "%";
+  
+  if (stage === "downloading") {
+    if (stageText) {
+      stageText.innerText = currentLang === 'km' ? `កំពុងទាញយក... ${percent}%` : `Downloading... ${percent}%`;
+    }
+  } else if (stage === "installing") {
+    if (cancelBtn) cancelBtn.style.display = "none";
+    if (heading) {
+      heading.innerText = currentLang === 'km' ? "កំពុងតម្លើងកំណែថ្មី..." : "Installing update...";
+    }
+    if (stageText) {
+      stageText.innerText = currentLang === 'km' ? "កំពុងពន្លាតកញ្ចប់ និងតម្លើង..." : "Extracting and installing...";
+    }
+  } else if (stage === "relaunching") {
+    if (cancelBtn) cancelBtn.style.display = "none";
+    if (progressBar) progressBar.style.width = "100%";
+    if (percentText) percentText.innerText = "100%";
+    if (heading) {
+      heading.innerText = currentLang === 'km' ? "🎉 តម្លើងរួចរាល់!" : "🎉 Update Complete!";
+    }
+    if (stageText) {
+      stageText.innerText = currentLang === 'km' ? "កំពុងចាប់ផ្ដើមកម្មវិធីឡើងវិញ..." : "Restarting application...";
+    }
+  } else if (stage === "cancelled") {
+    isAutoUpdating = false;
+    const closeBtn = document.querySelector(".modal-close-btn");
+    if (closeBtn) closeBtn.style.visibility = "visible";
+    closeModal();
+  } else if (stage === "error") {
+    isAutoUpdating = false;
+    const closeBtn = document.querySelector(".modal-close-btn");
+    if (closeBtn) closeBtn.style.visibility = "visible";
+    
+    const body = document.getElementById("modalBody");
+    const footer = document.getElementById("modalFooter");
+    if (body) {
+      body.innerHTML = `
+        <div style="text-align: center; padding: 20px; color: #64748b;">
+          <p style="color: #ef4444; font-size: 15px; margin-bottom: 8px;">⚠️ ${currentLang === 'km' ? "បរាជ័យក្នុងការធ្វើបច្ចុប្បន្នភាពស្វ័យប្រវត្តិ" : "Auto-update failed"}</p>
+          <p style="font-size: 12px; margin-bottom: 14px;">${data.message || "Unknown error"}</p>
+          <p style="font-size: 11.5px; color: #475569;">${currentLang === 'km' ? "លោកអ្នកអាចទាញយក និងតម្លើងដោយដៃតាមរយៈ Browser៖" : "You can still download and install manually via Browser:"}</p>
+        </div>
+      `;
+    }
+    if (footer) {
+      footer.innerHTML = `
+        <div style="display: flex; justify-content: flex-end; gap: 8px; width: 100%;">
+          <button class="action-btn" onclick="closeModal()">${currentLang === 'km' ? "បិទ" : "Close"}</button>
+          <button class="action-btn insert-word-action" onclick="openExternalUrl('${downloadUrl}'); closeModal();">🌐 ${currentLang === 'km' ? "ទាញយកតាម Browser" : "Download via Browser"}</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function cancelAutoUpdate() {
+  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeApp) {
+    window.webkit.messageHandlers.nativeApp.postMessage({ type: "cancelAutoUpdate" });
+  }
+  isAutoUpdating = false;
+  const closeBtn = document.querySelector(".modal-close-btn");
+  if (closeBtn) closeBtn.style.visibility = "visible";
+  closeModal();
 }
 
 function openExternalUrl(url) {

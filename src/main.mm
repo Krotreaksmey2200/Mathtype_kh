@@ -13,6 +13,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 @interface TeXResult : NSObject
 @property (assign, nonatomic) BOOL success;
@@ -44,9 +45,13 @@
 }
 @end
 
-@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler>
+@interface AppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate, WKScriptMessageHandler, NSURLSessionDownloadDelegate>
 @property (strong, nonatomic) NSWindow *window;
 @property (strong, nonatomic) WKWebView *webView;
+@property (strong, nonatomic) NSURLSession *updateSession;
+@property (strong, nonatomic) NSURLSessionDownloadTask *updateDownloadTask;
+@property (copy, nonatomic) NSString *targetUpdateVersion;
+@property (copy, nonatomic) NSString *targetDownloadURL;
 - (TeXResult *)compileWithLaTeXKernel:(NSString *)latex fontSize:(double)fontSize;
 + (BOOL)renderPDF:(NSString *)pdfPath toPNG:(NSString *)pngPath dpi:(double)dpi;
 - (void)insertEquationIntoWord:(TeXResult *)texRes latex:(NSString *)latex;
@@ -55,6 +60,9 @@
 - (NSString *)currentTeXPreamble;
 - (NSString *)currentTeXEngine;
 - (void)showLaTeXPreambleConfig:(id)sender;
+- (void)startAutoUpdateWithURL:(NSString *)urlString version:(NSString *)version;
+- (void)cancelAutoUpdate;
+- (void)notifyUpdateProgressStage:(NSString *)stage percent:(int)percent message:(NSString *)msg;
 @end
 
 @implementation AppDelegate
@@ -970,6 +978,12 @@
         if ([urlStr length] > 0) {
             [[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:urlStr]];
         }
+    } else if ([type isEqualToString:@"performAutoUpdate"]) {
+        NSString *urlStr = [NSString stringWithFormat:@"%@", body[@"url"] ?: @""];
+        NSString *versionStr = [NSString stringWithFormat:@"%@", body[@"version"] ?: @""];
+        [self startAutoUpdateWithURL:urlStr version:versionStr];
+    } else if ([type isEqualToString:@"cancelAutoUpdate"]) {
+        [self cancelAutoUpdate];
     } else if ([type isEqualToString:@"getPreamble"]) {
         NSString *preamble = [self currentTeXPreamble];
         NSString *engine = [self currentTeXEngine];
@@ -982,6 +996,258 @@
         NSString *js = [NSString stringWithFormat:@"updateLaTeXPreambleAndEngine(%@)", jsonStr];
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.webView evaluateJavaScript:js completionHandler:nil];
+        });
+    }
+}
+
+#pragma mark - In-App Seamless Auto-Updater
+
+- (void)startAutoUpdateWithURL:(NSString *)urlString version:(NSString *)version {
+    if (!urlString || [urlString length] == 0) return;
+    self.targetUpdateVersion = version ?: @"latest";
+    self.targetDownloadURL = urlString;
+    
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        [self notifyUpdateProgressStage:@"error" percent:0 message:@"Invalid download URL"];
+        return;
+    }
+    
+    if (self.updateDownloadTask) {
+        [self.updateDownloadTask cancel];
+        self.updateDownloadTask = nil;
+    }
+    
+    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+    config.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+    config.timeoutIntervalForRequest = 90.0;
+    self.updateSession = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:[NSOperationQueue mainQueue]];
+    
+    std::cout << "[Auto-Update] Starting download from: " << [urlString UTF8String] << std::endl;
+    [self notifyUpdateProgressStage:@"downloading" percent:0 message:@"0%"];
+    
+    self.updateDownloadTask = [self.updateSession downloadTaskWithURL:url];
+    [self.updateDownloadTask resume];
+}
+
+- (void)cancelAutoUpdate {
+    if (self.updateDownloadTask) {
+        [self.updateDownloadTask cancel];
+        self.updateDownloadTask = nil;
+    }
+    [self notifyUpdateProgressStage:@"cancelled" percent:0 message:@"Update cancelled."];
+    std::cout << "[Auto-Update] Update cancelled by user." << std::endl;
+}
+
+- (void)notifyUpdateProgressStage:(NSString *)stage percent:(int)percent message:(NSString *)msg {
+    NSString *safeMsg = [msg stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
+    safeMsg = [safeMsg stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    NSString *js = [NSString stringWithFormat:@"if (window.onUpdateProgress) window.onUpdateProgress({ stage: '%@', percent: %d, message: '%@' });", stage, percent, safeMsg];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self.webView evaluateJavaScript:js completionHandler:nil];
+    });
+}
+
+#pragma mark - NSURLSessionDownloadDelegate
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
+    int percent = 0;
+    if (totalBytesExpectedToWrite > 0) {
+        double fraction = (double)totalBytesWritten / (double)totalBytesExpectedToWrite;
+        percent = (int)(fraction * 70.0);
+        if (percent > 70) percent = 70;
+    } else {
+        double mb = (double)totalBytesWritten / (1024.0 * 1024.0);
+        percent = (int)((mb / 10.0) * 70.0);
+        if (percent > 65) percent = 65;
+    }
+    if (percent < 1 && totalBytesWritten > 0) percent = 1;
+    
+    NSString *msg = [NSString stringWithFormat:@"%d%%", percent];
+    [self notifyUpdateProgressStage:@"downloading" percent:percent message:msg];
+}
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
+    [self notifyUpdateProgressStage:@"installing" percent:75 message:@"Extracting..."];
+    
+    NSString *tempDir = @"/tmp/mathtype_update";
+    [[NSFileManager defaultManager] removeItemAtPath:tempDir error:nil];
+    [[NSFileManager defaultManager] createDirectoryAtPath:tempDir withIntermediateDirectories:YES attributes:nil error:nil];
+    
+    BOOL isZip = [self.targetDownloadURL.lowercaseString hasSuffix:@".zip"];
+    NSString *downloadedFile = [tempDir stringByAppendingPathComponent:(isZip ? @"update_archive.zip" : @"Mathtype-kh.pkg")];
+    
+    NSError *copyErr = nil;
+    [[NSFileManager defaultManager] copyItemAtURL:location toURL:[NSURL fileURLWithPath:downloadedFile] error:&copyErr];
+    if (copyErr) {
+        std::cerr << "[Auto-Update] Error copying downloaded file: " << [[copyErr localizedDescription] UTF8String] << std::endl;
+        [self notifyUpdateProgressStage:@"error" percent:0 message:[copyErr localizedDescription]];
+        return;
+    }
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @try {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self notifyUpdateProgressStage:@"installing" percent:82 message:@"Extracting package components..."];
+            });
+            
+            NSString *expandedDir = [tempDir stringByAppendingPathComponent:@"expanded"];
+            [[NSFileManager defaultManager] removeItemAtPath:expandedDir error:nil];
+            
+            if (isZip) {
+                [[NSFileManager defaultManager] createDirectoryAtPath:expandedDir withIntermediateDirectories:YES attributes:nil error:nil];
+                NSTask *unzipTask = [[NSTask alloc] init];
+                unzipTask.launchPath = @"/usr/bin/unzip";
+                unzipTask.arguments = @[@"-q", @"-o", downloadedFile, @"-d", expandedDir];
+                [unzipTask launch];
+                [unzipTask waitUntilExit];
+            } else {
+                NSTask *expandTask = [[NSTask alloc] init];
+                expandTask.launchPath = @"/usr/sbin/pkgutil";
+                expandTask.arguments = @[@"--expand-full", downloadedFile, expandedDir];
+                [expandTask launch];
+                [expandTask waitUntilExit];
+                
+                if (expandTask.terminationStatus != 0) {
+                    // Try unzip fallback
+                    [[NSFileManager defaultManager] createDirectoryAtPath:expandedDir withIntermediateDirectories:YES attributes:nil error:nil];
+                    NSTask *unzipTask = [[NSTask alloc] init];
+                    unzipTask.launchPath = @"/usr/bin/unzip";
+                    unzipTask.arguments = @[@"-q", @"-o", downloadedFile, @"-d", expandedDir];
+                    [unzipTask launch];
+                    [unzipTask waitUntilExit];
+                }
+            }
+            
+            // Locate Mathtype-kh.app inside expandedDir
+            NSString *extractedApp = [expandedDir stringByAppendingPathComponent:@"Mathtype-kh-Component.pkg/Payload/Mathtype-kh.app"];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:extractedApp]) {
+                extractedApp = [expandedDir stringByAppendingPathComponent:@"Mathtype-kh.app"];
+            }
+            if (![[NSFileManager defaultManager] fileExistsAtPath:extractedApp]) {
+                NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtPath:expandedDir];
+                for (NSString *subPath in enumerator) {
+                    if ([subPath hasSuffix:@"Mathtype-kh.app"]) {
+                        extractedApp = [expandedDir stringByAppendingPathComponent:subPath];
+                        break;
+                    }
+                }
+            }
+            
+            if (!extractedApp || ![[NSFileManager defaultManager] fileExistsAtPath:extractedApp]) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self notifyUpdateProgressStage:@"error" percent:0 message:@"Application bundle not found in update payload."];
+                });
+                return;
+            }
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self notifyUpdateProgressStage:@"relaunching" percent:100 message:@"Relaunching..."];
+            });
+            
+            NSString *currentBundle = [[NSBundle mainBundle] bundlePath];
+            if (!currentBundle || ![currentBundle hasSuffix:@".app"]) {
+                currentBundle = @"/Applications/Mathtype-kh.app";
+            }
+            pid_t myPid = getpid();
+            
+            NSString *scriptPath = [tempDir stringByAppendingPathComponent:@"finish_update.sh"];
+            NSString *scriptContent = [NSString stringWithFormat:
+                @"#!/bin/bash\n"
+                @"OLD_PID=%d\n"
+                @"TARGET_APP=\"%@\"\n"
+                @"NEW_APP=\"%@\"\n"
+                @"EXPANDED_DIR=\"%@\"\n"
+                @"TEMP_DIR=\"%@\"\n"
+                @"\n"
+                @"# 1. Wait for old instance to terminate cleanly\n"
+                @"for i in $(seq 1 80); do\n"
+                @"    if ! kill -0 \"$OLD_PID\" 2>/dev/null; then\n"
+                @"        break\n"
+                @"    fi\n"
+                @"    sleep 0.1\n"
+                @"done\n"
+                @"\n"
+                @"if kill -0 \"$OLD_PID\" 2>/dev/null; then\n"
+                @"    kill -9 \"$OLD_PID\" 2>/dev/null || true\n"
+                @"fi\n"
+                @"\n"
+                @"# 2. Swap main application bundle\n"
+                @"rm -rf \"${TARGET_APP}.old\"\n"
+                @"if [ -d \"$TARGET_APP\" ]; then\n"
+                @"    mv \"$TARGET_APP\" \"${TARGET_APP}.old\"\n"
+                @"fi\n"
+                @"cp -R \"$NEW_APP\" \"$TARGET_APP\"\n"
+                @"\n"
+                @"# If running from somewhere else, also ensure /Applications/Mathtype-kh.app is updated\n"
+                @"if [ \"$TARGET_APP\" != \"/Applications/Mathtype-kh.app\" ] && [ -d \"/Applications/Mathtype-kh.app\" ]; then\n"
+                @"    rm -rf \"/Applications/Mathtype-kh.app.old\"\n"
+                @"    mv \"/Applications/Mathtype-kh.app\" \"/Applications/Mathtype-kh.app.old\"\n"
+                @"    cp -R \"$NEW_APP\" \"/Applications/Mathtype-kh.app\"\n"
+                @"    xattr -dr com.apple.quarantine \"/Applications/Mathtype-kh.app\" 2>/dev/null || true\n"
+                @"    codesign -s - --force --deep \"/Applications/Mathtype-kh.app\" 2>/dev/null || true\n"
+                @"    rm -rf \"/Applications/Mathtype-kh.app.old\"\n"
+                @"fi\n"
+                @"\n"
+                @"# 3. Strip quarantine and sign ad-hoc\n"
+                @"xattr -dr com.apple.quarantine \"$TARGET_APP\" 2>/dev/null || true\n"
+                @"codesign -s - --force --deep \"$TARGET_APP\" 2>/dev/null || true\n"
+                @"\n"
+                @"# 4. Sync Word Plugin if available in payload\n"
+                @"WORD_SRC=\"$EXPANDED_DIR/Mathtype-kh-WordPlugin.pkg/Payload\"\n"
+                @"if [ -d \"$WORD_SRC\" ]; then\n"
+                @"    USER_WORD_STARTUP=\"$HOME/Library/Group Containers/UBF8T346G9.Office/User Content.localized/Startup.localized/Word\"\n"
+                @"    mkdir -p \"$USER_WORD_STARTUP\" 2>/dev/null || true\n"
+                @"    if [ -f \"$WORD_SRC/Library/Application Support/Mathtype-kh/Mathtype-kh.dotm\" ]; then\n"
+                @"        cp -f \"$WORD_SRC/Library/Application Support/Mathtype-kh/Mathtype-kh.dotm\" \"$USER_WORD_STARTUP/Mathtype-kh.dotm\" 2>/dev/null || true\n"
+                @"        chmod 644 \"$USER_WORD_STARTUP/Mathtype-kh.dotm\" 2>/dev/null || true\n"
+                @"    fi\n"
+                @"    USER_APP_SCRIPTS=\"$HOME/Library/Application Scripts/com.microsoft.Word\"\n"
+                @"    mkdir -p \"$USER_APP_SCRIPTS\" 2>/dev/null || true\n"
+                @"    cp -f \"$WORD_SRC/Library/Application Support/Mathtype-kh/\"* \"$USER_APP_SCRIPTS/\" 2>/dev/null || true\n"
+                @"    \n"
+                @"    USER_APP_SUP=\"$HOME/Library/Application Support/Mathtype-kh\"\n"
+                @"    mkdir -p \"$USER_APP_SUP\" 2>/dev/null || true\n"
+                @"    cp -f \"$WORD_SRC/Library/Application Support/Mathtype-kh/\"* \"$USER_APP_SUP/\" 2>/dev/null || true\n"
+                @"fi\n"
+                @"\n"
+                @"# 5. Clean up temporary files\n"
+                @"rm -rf \"${TARGET_APP}.old\"\n"
+                @"rm -rf \"$TEMP_DIR\"\n"
+                @"\n"
+                @"# 6. Relaunch new app\n"
+                @"open -n -a \"$TARGET_APP\"\n",
+                myPid, currentBundle, extractedApp, expandedDir, tempDir
+            ];
+            
+            [scriptContent writeToFile:scriptPath atomically:YES encoding:NSUTF8StringEncoding error:nil];
+            chmod([scriptPath UTF8String], 0755);
+            
+            // Execute updater script in background detached
+            NSString *launchCmd = [NSString stringWithFormat:@"nohup \"%@\" > /dev/null 2>&1 &", scriptPath];
+            system([launchCmd UTF8String]);
+            
+            // Allow UI to show 100% / Relaunching state before terminating
+            usleep(700000);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSApp terminate:nil];
+                exit(0);
+            });
+            
+        } @catch (NSException *e) {
+            std::cerr << "[Auto-Update] Exception: " << [[e reason] UTF8String] << std::endl;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self notifyUpdateProgressStage:@"error" percent:0 message:[e reason]];
+            });
+        }
+    });
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
+    if (error && error.code != NSURLErrorCancelled) {
+        std::cerr << "[Auto-Update] Download error: " << [[error localizedDescription] UTF8String] << std::endl;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self notifyUpdateProgressStage:@"error" percent:0 message:[error localizedDescription]];
         });
     }
 }
